@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportar Mascota</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+       <div class="logo">🐾 PataConecta</div>
+       <nav>
+           <ul>
+               <li><a href="index.html">Inicio</a></li>
+               <li><a href="reportar.html">Reportar Mascota</a></li>
+               <li><a href="listado.html">Ver Reportes</a></li>
+               <li><a href="adopcion.html">Adopción</a></li>
+               <li><a href="contacto.html">Contacto</a></li>
+           </ul>
+       </nav>
+    </header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Reportar una mascota</h1>
+            <p>Completa este formulario si perdiste o encontraste una mascota en tu sector.</p>
+        </section>
+
+        <section class="formulario-container">
+            <form id="form-reporte">
+
+                <label for="tipo-reporte">¿Qué quieres reportar?</label>
+                <div class="opciones-radio">
+                    <label><input type="radio" name="tipo-reporte" value="perdida" required> Mascota perdida</label>
+                    <label><input type="radio" name="tipo-reporte" value="encontrada" required> Mascota encontrada</label>
+                </div>
+
+                <label for="tipo-mascota">Tipo de mascota</label>
+                <select id="tipo-mascota" name="tipo-mascota" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="perro">Perro</option>
+                    <option value="gato">Gato</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="nombre-mascota">Nombre de la mascota (si lo sabes)</label>
+                <input type="text" id="nombre-mascota" name="nombre-mascota" placeholder="Ej: Toby">
+
+                <label for="raza">Raza / Características</label>
+                <input type="text" id="raza" name="raza" placeholder="Ej: Mestizo café, collar rojo" required>
+
+                <label for="foto">Foto de la mascota</label>
+                <input type="text" id="foto" name="foto" accept="image/*" >
+
+                <label for="sector">Sector / barrio </label>
+                <select id="sector" name="sector" required>
+                    <option value="">Selecciona un sector</option>
+                    <option value="kennedy-central">Kennedy Central</option>
+                    <option value="patio-bonito">Patio Bonito</option>
+                    <option value="corabastos">Corabastos</option>
+                    <option value="timiza">Timiza</option>
+                    <option value="castilla">Castilla</option>
+                    <option value="tintal">Tintal</option>
+                    <option value="britalia">Britalia</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="fecha">Fecha en que se perdió/encontró</label>
+                <input type="date" id="fecha" name="fecha" required>
+
+                <label for="descripcion">Descripción adicional</label>
+                <textarea id="descripcion" name="descripcion" rows="4" placeholder="Cuenta más detalles: dónde exactamente, comportamiento, particularidades"> </textarea>
+
+                <label for="nombre-contacto">Tu nombre</label>
+                <input type="text" id="nombre-contacto" name="nombre-contacto" required>
+
+                <label for="telefono">Teléfono de contacto</label>
+                <input type="tel" id="telefono" name="telefono" required >
+
+                <button type="submit">Enviar reporte</button>
+            
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+</body>
+</html>
