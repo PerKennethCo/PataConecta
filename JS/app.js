@@ -28,3 +28,44 @@ if (formReporte) {
       });
   });
 }
+
+// ===== Mostrar reportes desde Firestore (listado.html) =====
+
+const listaReportes = document.getElementById('lista-reportes');
+
+if (listaReportes) {
+  db.collection('reportes')
+    .orderBy('fechaCreacion', 'desc')
+    .get()
+    .then(function (snapshot) {
+
+      if (snapshot.empty) {
+        listaReportes.innerHTML = '<p>Todavía no hay reportes registrados.</p>';
+        return;
+      }
+
+      snapshot.forEach(function (doc) {
+        const r = doc.data();
+
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+
+        tarjeta.innerHTML = `
+          <span class="etiqueta ${r.tipoReporte}">${r.tipoReporte === 'perdida' ? 'Perdida' : 'Encontrada'}</span>
+          <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+          <h2>${r.nombreMascota || 'Sin nombre'}</h2>
+          <p><strong>Sector:</strong> ${r.sector}</p>
+          <p><strong>Fecha:</strong> ${r.fecha}</p>
+          <p>${r.raza} — ${r.descripcion || ''}</p>
+          <p><strong>Contacto:</strong> ${r.nombreContacto} — ${r.telefono}</p>
+        `;
+
+        listaReportes.appendChild(tarjeta);
+      });
+
+    })
+    .catch(function (error) {
+      console.error('Error al cargar los reportes: ', error);
+      listaReportes.innerHTML = '<p>Hubo un error al cargar los reportes.</p>';
+    });
+}
