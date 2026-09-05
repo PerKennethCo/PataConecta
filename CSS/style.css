@@ -116,3 +116,14 @@ footer{
     padding: 20px;
     font-size: 0.85rem;
 }
+
+.mapa-container {
+    padding: 24px
+}
+
+#mapa {
+    height: 400px;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

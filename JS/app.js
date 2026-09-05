@@ -90,3 +90,14 @@ if (listaReportes) {
   filtroTipo.addEventListener('change', renderReportes);
   filtroSector.addEventListener('change', renderReportes);
 }
+
+const contenedorMapa = document.getElementById('mapa');
+
+if (contenedorMapa) {
+  const mapa = L.map('mapa').setView([4.6318, -74.1469], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(mapa);
+}
