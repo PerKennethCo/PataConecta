@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PataConecta</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta </div>
+            <img src="files/logo.png" alt="PataConecta Logo">
+            <nav>
+                <ul>
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="reportar.html">Reportar Mascota</a></li>
+                    <li><a href="listado.html">Ver Reportes</a></li>
+                    <li><a href="contacto.html">Contacto</a></li>
+                </ul>
+            </nav>
+    </header>
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Adopción responsable</h1>
+            <p>Conoce mascotas disponibles para adopción, o publica si tienes una a cargo</p>
+        </section>
+
+        <section class="formulario-container">
+            <h2>Publicar una Mascota en Adopción</h2>
+            <form id="form-adopcion">
+
+                <label for="nombre-mascota-adopcion">Nombre de la mascota</label>
+                <input type="text" id="nombre-mascota-adopcion" name="nombre-mascota-adopcion" placeholder="Ej: Rocky" required>
+
+                <label for="tipo-mascota-adopcion">Tipo de mascota</label>
+                <select id="tipo-mascota-adopcion" name="tipo-mascota-adopcion" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="perro">Perro</option>
+                    <option value="gato">Gato</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="edad-mascota">Edad aproximada</label>
+                <input type="text" id="edad-mascota" name="edad-mascota" placeholder="Ej: 2 años" required>
+
+                <label for="foto-adopcion">Foto de la mascota</label>
+                <input type="file" id="foto-adopcion" name="foto-adopcion" accept="image/*">
+
+                <label for="sector-adopcion">Sector / barrio (Kennedy)</label>
+                <select id="sector-adopcion" name="sector-adopcion" required>
+                    <option value="">Selecciona un sector</option>
+                    <option value="kennedy-central">Kennedy Central</option>
+                    <option value="patio-bonito">Patio Bonito</option>
+                    <option value="corabastos">Corabastos</option>
+                    <option value="timiza">Timiza</option>
+                    <option value="castilla">Castilla</option>
+                    <option value="tintal">Tintal</option>
+                    <option value="britalia">Britalia</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="descripcion-adopcion">Descripción</label>
+                <textarea id="descripcion-adopcion" name="descripcion-adopcion" rows="4" placeholder="Temperamento, si está vacunado/esterilizado, con quién se lleva bien, etc."></textarea>
+
+                <label for="nombre-contacto-adopcion">Tu nombre o el de la fundación</label>
+                <input type="text" id="nombre-contacto-adopcion" name="nombre-contacto-adopcion" required>
+
+                <label for="telefono-adopcion">Teléfono o WhatsApp de contacto</label>
+                <input type="tel" id="telefono-adopcion" name="telefono-adopcion" placeholder="Ej: 3001234567" required>
+
+                <button type="submit">Publicar en adopción</button>
+
+            </form>
+        </section>
+
+        <section class="encabezado-pagina">
+            <h2>Mascotas disponibles para adopción</h2>
+        </section>
+
+        <section class="lista-reportes" id="lista-adopcion">
+
+            <article class="reporte-card">
+                <span class="etiqueta encontrada">En adopción</span>
+                <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+                <h2>Rocky</h2>
+                <p><strong>Tipo:</strong> Perro — 2 años</p>
+                <p><strong>Sector:</strong> Kennedy Central</p>
+                <p>Muy juguetón, ya está esterilizado. Se lleva bien con niños.</p>
+                <p><strong>Contacto:</strong> Fundación Huellas Kennedy — 300 111 2222</p>
+            </article>
+
+            <article class="reporte-card">
+                <span class="etiqueta encontrada">En adopción</span>
+                <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+                <h2>Misha</h2>
+                <p><strong>Tipo:</strong> Gato — 1 año</p>
+                <p><strong>Sector:</strong> Timiza</p>
+                <p>Muy tranquila, ideal para apartamento. Vacunada al día.</p>
+                <p><strong>Contacto:</strong> 310 333 4444</p>
+            </article>
+
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
