@@ -159,3 +159,42 @@ if (formAdopcion) {
       });
   });
 }
+
+const listaAdopcion = document.getElementById('lista-adopcion');
+
+if (listaAdopcion) {
+  db.collection('adopciones')
+    .orderBy('fechaCreacion', 'desc')
+    .get()
+    .then(function (snapshot) {
+
+      if (snapshot.empty) {
+        listaAdopcion.innerHTML = '<p>Todavía no hay mascotas publicadas en adopción.</p>';
+        return;
+      }
+
+      snapshot.forEach(function (doc) {
+        const a = doc.data();
+
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+
+        tarjeta.innerHTML = `
+          <span class="etiqueta encontrada">En adopción</span>
+          <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+          <h2>${a.nombreMascota || 'Sin nombre'}</h2>
+          <p><strong>Tipo:</strong> ${a.tipoMascota} — ${a.edad}</p>
+          <p><strong>Sector:</strong> ${a.sector}</p>
+          <p>${a.descripcion || ''}</p>
+          <p><strong>Contacto:</strong> ${a.nombreContacto} — ${a.telefono}</p>
+        `;
+
+        listaAdopcion.appendChild(tarjeta);
+      });
+
+    })
+    .catch(function (error) {
+      console.error('Error al cargar las adopciones: ', error);
+      listaAdopcion.innerHTML = '<p>Hubo un error al cargar las publicaciones.</p>';
+    });
+}
