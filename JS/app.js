@@ -130,3 +130,32 @@ if (contenedorMapa) {
 
   capaMarcadores = L.layerGroup().addTo(mapa);
 }
+
+const formAdopcion = document.getElementById('form-adopcion');
+
+if (formAdopcion) {
+  formAdopcion.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const nuevaAdopcion = {
+      nombreMascota: document.getElementById('nombre-mascota-adopcion').value,
+      tipoMascota: document.getElementById('tipo-mascota-adopcion').value,
+      edad: document.getElementById('edad-mascota').value,
+      sector: document.getElementById('sector-adopcion').value,
+      descripcion: document.getElementById('descripcion-adopcion').value,
+      nombreContacto: document.getElementById('nombre-contacto-adopcion').value,
+      telefono: document.getElementById('telefono-adopcion').value,
+      fechaCreacion: new Date().toISOString()
+    };
+
+    db.collection('adopciones').add(nuevaAdopcion)
+      .then(function () {
+        alert('¡Mascota publicada en adopción con éxito!');
+        formAdopcion.reset();
+      })
+      .catch(function (error) {
+        console.error('Error al guardar la publicación: ', error);
+        alert('Hubo un error al publicar. Intenta de nuevo.');
+      });
+  });
+}
