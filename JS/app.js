@@ -37,8 +37,23 @@ const filtroSector = document.getElementById('filtro-sector');
 
 let todosLosReportes = []; // aquí guardamos los reportes ya traídos de Firestore
 
+const coordenadasSector = {
+  'kennedy-central': [4.6318, -74.1469],
+  'patio-bonito': [4.6270, -74.1670],
+  'corabastos': [4.6195, -74.1750],
+  'timiza': [4.6120, -74.1520],
+  'castilla': [4.6395, -74.1270],
+  'tintal': [4.6460, -74.1830],
+  'britalia': [4.6280, -74.1370],
+  'otro': [4.6318, -74.1469]
+};
+
 function renderReportes() {
   listaReportes.innerHTML = '';
+
+  if (capaMarcadores) {
+    capaMarcadores.clearLayers(); // borra los pines anteriores antes de dibujar los nuevos
+  }
 
   const tipoSeleccionado = filtroTipo.value;
   const sectorSeleccionado = filtroSector.value;
@@ -69,6 +84,16 @@ function renderReportes() {
     `;
 
     listaReportes.appendChild(tarjeta);
+
+    // ===== Agregar el pin correspondiente en el mapa =====
+    if (capaMarcadores && coordenadasSector[r.sector]) {
+      const marcador = L.marker(coordenadasSector[r.sector]).bindPopup(`
+        <strong>${r.nombreMascota || 'Sin nombre'}</strong><br>
+        ${r.tipoReporte === 'perdida' ? '🔴 Perdida' : '🟢 Encontrada'}<br>
+        ${r.sector}
+      `);
+      capaMarcadores.addLayer(marcador);
+    }
   });
 }
 
@@ -92,12 +117,16 @@ if (listaReportes) {
 }
 
 const contenedorMapa = document.getElementById('mapa');
+let mapa;
+let capaMarcadores;
 
 if (contenedorMapa) {
-  const mapa = L.map('mapa').setView([4.6318, -74.1469], 13);
+  mapa = L.map('mapa').setView([4.6318, -74.1469], 13); // Kennedy, Bogotá
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(mapa);
+
+  capaMarcadores = L.layerGroup().addTo(mapa);
 }
