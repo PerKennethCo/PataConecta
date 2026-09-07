@@ -259,3 +259,76 @@ footer{
 .etiqueta.encontrada {
     background-color: var(--verde);
 }
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  nav ul {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .hero p {
+    font-size: 1rem;
+  }
+
+  .acciones {
+    padding: 32px 16px;
+  }
+
+  .tarjeta {
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .formulario-container {
+    margin: 0 16px;
+    padding: 16px;
+  }
+
+  .lista-reportes {
+    padding: 16px;
+  }
+
+  .reporte-card {
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .mapa-container {
+    padding: 16px;
+  }
+
+  #mapa {
+    height: 280px;
+  }
+
+  .filtros select {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  nav ul {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .opciones-radio {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
