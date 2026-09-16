@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="reportar.html">Reportar Mascota</a></li>
+                <li><a href="listado.html">Ver Reportes</a></li>
+                <li><a href="adopcion.html">Adopción</a></li>
+                <li><a href="contacto.html">Contacto</a></li>
+                <li><a href="login.html">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Iniciar sesión</h1>
+        </section>
+
+        <section class="formulario-container">
+            <form id="form-login">
+                <label for="login-correo">Correo</label>
+                <input type="email" id="login-correo" required>
+
+                <label for="login-password">Contraseña</label>
+                <input type="password" id="login-password" required>
+
+                <button type="submit">Iniciar sesión</button>
+            </form>
+            <p id="login-mensaje" style="margin-top:12px;"></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <h2>¿No tienes cuenta? Regístrate</h2>
+            <form id="form-registro">
+                <label for="registro-nombre">Nombre completo</label>
+                <input type="text" id="registro-nombre" required>
+
+                <label for="registro-correo">Correo</label>
+                <input type="email" id="registro-correo" required>
+
+                <label for="registro-password">Contraseña</label>
+                <input type="password" id="registro-password" required minlength="6">
+
+                <button type="submit">Crear cuenta</button>
+            </form>
+            <p id="registro-mensaje" style="margin-top:12px;"></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <p>¿Ya iniciaste sesión y quieres salir?</p>
+            <button id="btn-logout">Cerrar sesión</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>

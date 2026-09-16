@@ -198,3 +198,66 @@ if (listaAdopcion) {
       listaAdopcion.innerHTML = '<p>Hubo un error al cargar las publicaciones.</p>';
     });
 }
+
+
+const formLogin = document.getElementById('form-login');
+const formRegistro = document.getElementById('form-registro');
+const btnLogout = document.getElementById('btn-logout');
+
+if (formLogin) {
+  formLogin.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const correo = document.getElementById('login-correo').value;
+    const password = document.getElementById('login-password').value;
+    const mensaje = document.getElementById('login-mensaje');
+
+    firebase.auth().signInWithEmailAndPassword(correo, password)
+      .then(function () {
+        mensaje.textContent = '¡Bienvenido/a! Sesión iniciada correctamente.';
+        mensaje.style.color = 'green';
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+      })
+      .catch(function () {
+        mensaje.textContent = 'Correo o contraseña incorrectos.';
+        mensaje.style.color = 'red';
+      });
+  });
+}
+
+if (formRegistro) {
+  formRegistro.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const nombre = document.getElementById('registro-nombre').value;
+    const correo = document.getElementById('registro-correo').value;
+    const password = document.getElementById('registro-password').value;
+    const mensaje = document.getElementById('registro-mensaje');
+
+    firebase.auth().createUserWithEmailAndPassword(correo, password)
+      .then(function (cred) {
+        return db.collection('usuarios').doc(cred.user.uid).set({
+          nombre: nombre,
+          correo: correo,
+          rol: 'usuario',
+          fechaCreacion: new Date().toISOString()
+        });
+      })
+      .then(function () {
+        mensaje.textContent = '¡Cuenta creada con éxito!';
+        mensaje.style.color = 'green';
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+      })
+      .catch(function (error) {
+        mensaje.textContent = 'Error al crear la cuenta: ' + error.message;
+        mensaje.style.color = 'red';
+      });
+  });
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener('click', function () {
+    firebase.auth().signOut().then(function () {
+      alert('Sesión cerrada.');
+      window.location.href = 'index.html';
+    });
+  });
+}
