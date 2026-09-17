@@ -230,34 +230,49 @@ if (formRegistro) {
     const nombre = document.getElementById('registro-nombre').value;
     const correo = document.getElementById('registro-correo').value;
     const password = document.getElementById('registro-password').value;
+    const documento = document.getElementById('registro-documento').value;
+    const telefono = document.getElementById('registro-telefono').value;
+    const pinSeguridad = document.getElementById('registro-pin').value;
     const mensaje = document.getElementById('registro-mensaje');
+
+    let cuentaCreada = null;
 
     firebase.auth().createUserWithEmailAndPassword(correo, password)
       .then(function (cred) {
-        return db.collection('usuarios').doc(cred.user.uid).set({
-          nombre: nombre,
-          correo: correo,
+        cuentaCreada = cred.user;
+
+        const batch = db.batch();
+
+        batch.set(db.collection('usuarios').doc(cred.user.uid), {
+          nombre, correo, documento, telefono, pinSeguridad,
           rol: 'usuario',
           fechaCreacion: new Date().toISOString()
         });
+
+        batch.set(db.collection('documentos-registrados').doc(documento), {
+          uid: cred.user.uid
+        });
+
+        return batch.commit();
       })
       .then(function () {
         mensaje.textContent = '¡Cuenta creada con éxito!';
         mensaje.style.color = 'green';
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
       })
       .catch(function (error) {
-        mensaje.textContent = 'Error al crear la cuenta: ' + error.message;
+        // Si la cuenta de acceso ya se creó pero el perfil falló
+        // (ej. documento duplicado), la eliminamos para no dejar
+        // una cuenta "fantasma" sin datos.
+        if (cuentaCreada) {
+          cuentaCreada.delete().catch(() => {});
+        }
+        if (error.code === 'permission-denied') {
+          mensaje.textContent = 'Ese número de documento ya está registrado con otra cuenta.';
+        } else {
+          mensaje.textContent = 'Error al crear la cuenta: ' + error.message;
+        }
         mensaje.style.color = 'red';
       });
-  });
-}
-
-if (btnLogout) {
-  btnLogout.addEventListener('click', function () {
-    firebase.auth().signOut().then(function () {
-      alert('Sesión cerrada.');
-      window.location.href = 'index.html';
-    });
   });
 }

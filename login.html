@@ -48,9 +48,17 @@
                 <label for="registro-correo">Correo</label>
                 <input type="email" id="registro-correo" required>
 
+                <label for="registro-documento">Número de documento</label>
+                <input type="text" id="registro-documento" required>
+
+                <label for="registro-telefono">Teléfono de contacto</label>
+                <input type="tel" id="registro-telefono" placeholder="Ej: 3001234567" required>
+
+                <label for="registro-pin">PIN de seguridad (2 dígitos)</label>
+                <input type="text" id="registro-pin" pattern="\d{2}" maxlength="2" title="Debe ser exactamente 2 números" required>
+
                 <label for="registro-password">Contraseña</label>
                 <input type="password" id="registro-password" required minlength="6">
-
                 <button type="submit">Crear cuenta</button>
             </form>
             <p id="registro-mensaje" style="margin-top:12px;"></p>
