@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Moderador — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="login.html">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Panel de Moderador</h1>
+        </section>
+        <p id="mod-mensaje-acceso" class="formulario-container"></p>
+        <section class="lista-reportes" id="mod-lista-solicitudes"></section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>

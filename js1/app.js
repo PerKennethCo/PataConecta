@@ -310,3 +310,68 @@ if (formSolicitudFundacion) {
       });
   });
 }
+// ===== Panel de Moderador (moderador.html) =====
+
+const mensajeAcceso = document.getElementById('mod-mensaje-acceso');
+const listaSolicitudesMod = document.getElementById('mod-lista-solicitudes');
+
+if (listaSolicitudesMod) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      mensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      return;
+    }
+    db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+      if (!doc.exists || doc.data().rol !== 'moderador') {
+        mensajeAcceso.textContent = 'No tienes permiso para ver esta página.';
+        return;
+      }
+      mensajeAcceso.textContent = '';
+      cargarSolicitudesPendientes(user);
+    });
+  });
+}
+
+function cargarSolicitudesPendientes(usuarioModerador) {
+  db.collection('solicitudes-fundacion').where('estado', '==', 'pendiente').get()
+    .then(function (snapshot) {
+      listaSolicitudesMod.innerHTML = '';
+      if (snapshot.empty) {
+        listaSolicitudesMod.innerHTML = '<p>No hay solicitudes pendientes.</p>';
+        return;
+      }
+      snapshot.forEach(function (doc) {
+        const s = doc.data();
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+        tarjeta.innerHTML = `
+          <h2>${s.nombreFundacion}</h2>
+          <p><strong>NIT:</strong> ${s.nit}</p>
+          <p><strong>Representante:</strong> ${s.representante}</p>
+          <p><strong>Documento:</strong> ${s.documento}</p>
+          <p><strong>Correo:</strong> ${s.correo}</p>
+          <p><strong>Teléfono:</strong> ${s.telefono}</p>
+          <button class="btn-aprobar">Aprobar</button>
+          <button class="btn-rechazar">Rechazar</button>
+        `;
+        tarjeta.querySelector('.btn-aprobar').addEventListener('click', () => procesarSolicitud(usuarioModerador, doc.id, 'aprobar'));
+        tarjeta.querySelector('.btn-rechazar').addEventListener('click', () => procesarSolicitud(usuarioModerador, doc.id, 'rechazar'));
+        listaSolicitudesMod.appendChild(tarjeta);
+      });
+    });
+}
+
+function procesarSolicitud(usuarioModerador, solicitudId, accion) {
+  usuarioModerador.getIdToken().then(function (idToken) {
+    fetch('https://pata-conecta-backend.vercel.app/api/aprobar-fundacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ solicitudId, accion })
+    })
+    .then(r => r.json())
+    .then(function (data) {
+      alert(data.mensaje || data.error);
+      cargarSolicitudesPendientes(usuarioModerador);
+    });
+  });
+}
