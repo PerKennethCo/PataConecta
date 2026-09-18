@@ -276,3 +276,37 @@ if (formRegistro) {
       });
   });
 }
+// ===== Solicitud pública de fundación (solicitud-fundacion.html) =====
+
+const formSolicitudFundacion = document.getElementById('form-solicitud-fundacion');
+
+if (formSolicitudFundacion) {
+  formSolicitudFundacion.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const solicitud = {
+      nombreFundacion: document.getElementById('sf-nombre-fundacion').value,
+      nit: document.getElementById('sf-nit').value,
+      representante: document.getElementById('sf-representante').value,
+      documento: document.getElementById('sf-documento').value,
+      telefono: document.getElementById('sf-telefono').value,
+      correo: document.getElementById('sf-correo').value,
+      pinSeguridad: document.getElementById('sf-pin').value,
+      estado: 'pendiente',
+      fechaSolicitud: new Date().toISOString()
+    };
+
+    const mensaje = document.getElementById('sf-mensaje');
+
+    db.collection('solicitudes-fundacion').add(solicitud)
+      .then(function () {
+        mensaje.textContent = '¡Solicitud enviada! Un moderador la revisará pronto.';
+        mensaje.style.color = 'green';
+        formSolicitudFundacion.reset();
+      })
+      .catch(function (error) {
+        mensaje.textContent = 'Error al enviar la solicitud: ' + error.message;
+        mensaje.style.color = 'red';
+      });
+  });
+}
