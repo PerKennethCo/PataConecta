@@ -406,6 +406,13 @@ if (cuentaNombreEl) {
       document.getElementById('cuenta-rol').textContent = perfil.rol;
       document.getElementById('cuenta-telefono-input').value = perfil.telefono || '';
       document.getElementById('cuenta-pin-input').value = perfil.pinSeguridad || '';
+      if (perfil.rol === 'fundacion') {
+      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-fundacion.html">Ir a mi panel de fundación →</a></p>');
+      } else if (perfil.rol === 'empleado') {
+      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-empleado.html">Ir a mi panel de empleado →</a></p>');
+      } else if (perfil.rol === 'moderador') {
+      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="moderador.html">Ir a mi panel de moderador →</a></p>');
+      }
     });
 
     document.getElementById('form-cuenta-telefono').addEventListener('submit', function (e) {
@@ -710,11 +717,4 @@ function cargarAdopcionesEmpleado(user, fundacionId) {
         lista.appendChild(tarjeta);
       });
     });
-}
-if (perfil.rol === 'fundacion') {
-  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-fundacion.html">Ir a mi panel de fundación →</a></p>');
-} else if (perfil.rol === 'empleado') {
-  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-empleado.html">Ir a mi panel de empleado →</a></p>');
-} else if (perfil.rol === 'moderador') {
-  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="moderador.html">Ir a mi panel de moderador →</a></p>');
 }
