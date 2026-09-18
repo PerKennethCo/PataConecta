@@ -465,3 +465,43 @@ if (btnLogout) {
     });
   });
 }
+// ===== Recuperar contraseña (recuperar-password.html) =====
+
+const formRecuperarPassword = document.getElementById('form-recuperar-password');
+
+if (formRecuperarPassword) {
+  formRecuperarPassword.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const datos = {
+      correo: document.getElementById('rec-correo').value,
+      documento: document.getElementById('rec-documento').value,
+      telefono: document.getElementById('rec-telefono').value,
+      pinSeguridad: document.getElementById('rec-pin').value,
+      nuevaPassword: document.getElementById('rec-password-nueva').value
+    };
+    const mensaje = document.getElementById('rec-mensaje');
+
+    fetch('https://pata-conecta-backend.vercel.app/api/recuperar-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos)
+    })
+    .then(r => r.json())
+    .then(function (data) {
+      if (data.mensaje) {
+        mensaje.textContent = data.mensaje + ' Ya puedes iniciar sesión.';
+        mensaje.style.color = 'green';
+        formRecuperarPassword.reset();
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+      } else {
+        mensaje.textContent = data.error;
+        mensaje.style.color = 'red';
+      }
+    })
+    .catch(function () {
+      mensaje.textContent = 'Error de conexión. Intenta de nuevo.';
+      mensaje.style.color = 'red';
+    });
+  });
+}
