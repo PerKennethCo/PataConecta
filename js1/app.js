@@ -566,20 +566,155 @@ function cargarEmpleados(usuarioFundacion) {
     .then(function (snapshot) {
       const lista = document.getElementById('pf-lista-empleados');
       lista.innerHTML = '<h2 style="width:100%;">Empleados registrados</h2>';
+
+      const nombresEmpleados = {};
+      snapshot.forEach(function (doc) {
+        nombresEmpleados[doc.id] = doc.data().nombre;
+      });
+
       if (snapshot.empty) {
         lista.innerHTML += '<p>Todavía no has creado empleados.</p>';
+      } else {
+        snapshot.forEach(function (doc) {
+          const e = doc.data();
+          const tarjeta = document.createElement('article');
+          tarjeta.classList.add('reporte-card');
+          tarjeta.innerHTML = `
+            <h2>${e.nombre}</h2>
+            <p><strong>Correo:</strong> ${e.correo}</p>
+            <p><strong>Teléfono:</strong> ${e.telefono}</p>
+          `;
+          lista.appendChild(tarjeta);
+        });
+      }
+
+      cargarAdopcionesFundacion(usuarioFundacion.uid, nombresEmpleados);
+    });
+}
+
+function cargarAdopcionesFundacion(fundacionId, nombresEmpleados) {
+  db.collection('adopciones').where('fundacionId', '==', fundacionId).get()
+    .then(function (snapshot) {
+      const lista = document.getElementById('pf-lista-adopciones');
+      lista.innerHTML = `<h2 style="width:100%;">Mascotas publicadas (${snapshot.size})</h2>`;
+      if (snapshot.empty) {
+        lista.innerHTML += '<p>Todavía no se ha publicado ninguna mascota.</p>';
         return;
       }
       snapshot.forEach(function (doc) {
-        const e = doc.data();
+        const a = doc.data();
         const tarjeta = document.createElement('article');
         tarjeta.classList.add('reporte-card');
         tarjeta.innerHTML = `
-          <h2>${e.nombre}</h2>
-          <p><strong>Correo:</strong> ${e.correo}</p>
-          <p><strong>Teléfono:</strong> ${e.telefono}</p>
+          <span class="etiqueta ${a.estado === 'adoptada' ? 'perdida' : 'encontrada'}">${etiquetaEstado(a.estado)}</span>
+          <h2>${a.nombreMascota}</h2>
+          <p><strong>Publicado por:</strong> ${nombresEmpleados[a.empleadoId] || 'Desconocido'}</p>
+          <p><strong>Sector:</strong> ${a.sector}</p>
         `;
         lista.appendChild(tarjeta);
       });
     });
+}
+// ===== Panel de Empleado (panel-empleado.html) =====
+
+const peMensajeAcceso = document.getElementById('pe-mensaje-acceso');
+
+if (peMensajeAcceso) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      peMensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      return;
+    }
+    db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+      if (!doc.exists || doc.data().rol !== 'empleado') {
+        peMensajeAcceso.textContent = 'No tienes permiso para ver esta página.';
+        return;
+      }
+      const perfil = doc.data();
+      peMensajeAcceso.textContent = '';
+      document.getElementById('pe-form-container').style.display = 'block';
+
+      cargarAdopcionesEmpleado(user, perfil.fundacionId);
+
+      document.getElementById('form-publicar-adopcion').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const nuevaAdopcion = {
+          nombreMascota: document.getElementById('pe-nombre-mascota').value,
+          tipoMascota: document.getElementById('pe-tipo-mascota').value,
+          edad: document.getElementById('pe-edad').value,
+          sector: document.getElementById('pe-sector').value,
+          descripcion: document.getElementById('pe-descripcion').value,
+          nombreContacto: document.getElementById('pe-contacto-nombre').value,
+          telefono: document.getElementById('pe-contacto-telefono').value,
+          fundacionId: perfil.fundacionId,
+          empleadoId: user.uid,
+          estado: 'publicada',
+          fechaCreacion: new Date().toISOString()
+        };
+        const msg = document.getElementById('pe-mensaje-publicar');
+
+        db.collection('adopciones').add(nuevaAdopcion)
+          .then(function () {
+            msg.textContent = '¡Mascota publicada con éxito!';
+            msg.style.color = 'green';
+            document.getElementById('form-publicar-adopcion').reset();
+            cargarAdopcionesEmpleado(user, perfil.fundacionId);
+          })
+          .catch(function (error) {
+            msg.textContent = 'Error: ' + error.message;
+            msg.style.color = 'red';
+          });
+      });
+    });
+  });
+}
+
+function etiquetaEstado(estado) {
+  if (estado === 'publicada') return 'Publicada';
+  if (estado === 'en_proceso') return 'En proceso de adopción';
+  if (estado === 'adoptada') return 'Adoptada';
+  return estado;
+}
+
+function cargarAdopcionesEmpleado(user, fundacionId) {
+  db.collection('adopciones').where('fundacionId', '==', fundacionId).get()
+    .then(function (snapshot) {
+      const lista = document.getElementById('pe-lista-adopciones');
+      lista.innerHTML = '<h2 style="width:100%;">Mascotas publicadas por tu fundación</h2>';
+      if (snapshot.empty) {
+        lista.innerHTML += '<p>Todavía no hay publicaciones.</p>';
+        return;
+      }
+      snapshot.forEach(function (doc) {
+        const a = doc.data();
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+        tarjeta.innerHTML = `
+          <span class="etiqueta ${a.estado === 'adoptada' ? 'perdida' : 'encontrada'}">${etiquetaEstado(a.estado)}</span>
+          <h2>${a.nombreMascota}</h2>
+          <p><strong>Tipo:</strong> ${a.tipoMascota} — ${a.edad}</p>
+          <p><strong>Sector:</strong> ${a.sector}</p>
+          <p>${a.descripcion || ''}</p>
+        `;
+        if (a.estado !== 'adoptada') {
+          const btnAvanzar = document.createElement('button');
+          btnAvanzar.setAttribute('type', 'button');
+          btnAvanzar.textContent = a.estado === 'publicada' ? 'Marcar "En proceso"' : 'Marcar "Adoptada"';
+          btnAvanzar.addEventListener('click', function () {
+            const nuevoEstado = a.estado === 'publicada' ? 'en_proceso' : 'adoptada';
+            db.collection('adopciones').doc(doc.id).update({ estado: nuevoEstado })
+              .then(() => cargarAdopcionesEmpleado(user, fundacionId));
+          });
+          tarjeta.appendChild(btnAvanzar);
+        }
+        lista.appendChild(tarjeta);
+      });
+    });
+}
+if (perfil.rol === 'fundacion') {
+  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-fundacion.html">Ir a mi panel de fundación →</a></p>');
+} else if (perfil.rol === 'empleado') {
+  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-empleado.html">Ir a mi panel de empleado →</a></p>');
+} else if (perfil.rol === 'moderador') {
+  document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="moderador.html">Ir a mi panel de moderador →</a></p>');
 }

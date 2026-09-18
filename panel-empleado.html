@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Empleado — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="login.html" id="nav-auth-link">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Panel de Empleado</h1>
+        </section>
+        <p id="pe-mensaje-acceso" class="formulario-container"></p>
+
+        <section class="formulario-container" id="pe-form-container" style="display:none;">
+            <h2>Publicar una mascota en adopción</h2>
+            <form id="form-publicar-adopcion">
+                <label for="pe-nombre-mascota">Nombre de la mascota</label>
+                <input type="text" id="pe-nombre-mascota" required>
+
+                <label for="pe-tipo-mascota">Tipo de mascota</label>
+                <select id="pe-tipo-mascota" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="perro">Perro</option>
+                    <option value="gato">Gato</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="pe-edad">Edad aproximada</label>
+                <input type="text" id="pe-edad" required>
+
+                <label for="pe-sector">Sector / barrio</label>
+                <select id="pe-sector" required>
+                    <option value="">Selecciona un sector</option>
+                    <option value="kennedy-central">Kennedy Central</option>
+                    <option value="patio-bonito">Patio Bonito</option>
+                    <option value="corabastos">Corabastos</option>
+                    <option value="timiza">Timiza</option>
+                    <option value="castilla">Castilla</option>
+                    <option value="tintal">Tintal</option>
+                    <option value="britalia">Britalia</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="pe-descripcion">Descripción</label>
+                <textarea id="pe-descripcion" rows="4"></textarea>
+
+                <label for="pe-contacto-nombre">Nombre de contacto</label>
+                <input type="text" id="pe-contacto-nombre" required>
+
+                <label for="pe-contacto-telefono">Teléfono de contacto</label>
+                <input type="tel" id="pe-contacto-telefono" required>
+
+                <button type="submit">Publicar en adopción</button>
+            </form>
+            <p id="pe-mensaje-publicar"></p>
+        </section>
+
+        <section class="lista-reportes" id="pe-lista-adopciones"></section>
+    </main>
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>
