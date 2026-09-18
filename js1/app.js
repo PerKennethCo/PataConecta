@@ -457,3 +457,11 @@ if (cuentaNombreEl) {
     });
   });
 }
+if (btnLogout) {
+  btnLogout.addEventListener('click', function () {
+    firebase.auth().signOut().then(function () {
+      alert('Sesión cerrada.');
+      window.location.href = 'index.html';
+    });
+  });
+}
