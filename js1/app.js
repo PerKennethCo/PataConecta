@@ -569,7 +569,10 @@ if (pfMensajeAcceso) {
 }
 
 function cargarEmpleados(usuarioFundacion) {
-  db.collection('usuarios').where('fundacionId', '==', usuarioFundacion.uid).get()
+  db.collection('usuarios')
+      .where('fundacionId', '==', usuarioFundacion.uid)
+      .where('rol', '==', 'empleado')
+      .get()
     .then(function (snapshot) {
       const lista = document.getElementById('pf-lista-empleados');
       lista.innerHTML = '<h2 style="width:100%;">Empleados registrados</h2>';
