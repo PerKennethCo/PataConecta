@@ -249,8 +249,8 @@ if (formRegistro) {
           fechaCreacion: new Date().toISOString()
         });
 
-        batch.set(db.collection('documentos-registrados').doc(documento), {
-          uid: cred.user.uid
+        batch.set(db.collection('documentos-registrados').doc(documento + '_usuario'), {
+        uid: cred.user.uid, documento, rol: 'usuario'
         });
 
         return batch.commit();
