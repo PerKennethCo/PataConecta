@@ -505,3 +505,81 @@ if (formRecuperarPassword) {
     });
   });
 }
+// ===== Panel de Fundación (panel-fundacion.html) =====
+
+const pfMensajeAcceso = document.getElementById('pf-mensaje-acceso');
+
+if (pfMensajeAcceso) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      pfMensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      return;
+    }
+    db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+      if (!doc.exists || doc.data().rol !== 'fundacion') {
+        pfMensajeAcceso.textContent = 'No tienes permiso para ver esta página.';
+        return;
+      }
+      const perfil = doc.data();
+      pfMensajeAcceso.textContent = '';
+      document.getElementById('pf-info').style.display = 'block';
+      document.getElementById('pf-form-container').style.display = 'block';
+      document.getElementById('pf-nombre-fundacion').textContent = perfil.nombreFundacion;
+      document.getElementById('pf-nit').textContent = perfil.nit;
+
+      cargarEmpleados(user);
+
+      document.getElementById('form-crear-empleado').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const datos = {
+          nombre: document.getElementById('emp-nombre').value,
+          correo: document.getElementById('emp-correo').value,
+          documento: document.getElementById('emp-documento').value,
+          telefono: document.getElementById('emp-telefono').value,
+          pinSeguridad: document.getElementById('emp-pin').value
+        };
+        const mensaje = document.getElementById('emp-mensaje');
+
+        user.getIdToken().then(function (idToken) {
+          fetch('https://pata-conecta-backend.vercel.app/api/crear-empleado', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+            body: JSON.stringify(datos)
+          })
+          .then(r => r.json())
+          .then(function (data) {
+            mensaje.textContent = data.mensaje || data.error;
+            mensaje.style.color = data.mensaje ? 'green' : 'red';
+            if (data.mensaje) {
+              document.getElementById('form-crear-empleado').reset();
+              cargarEmpleados(user);
+            }
+          });
+        });
+      });
+    });
+  });
+}
+
+function cargarEmpleados(usuarioFundacion) {
+  db.collection('usuarios').where('fundacionId', '==', usuarioFundacion.uid).get()
+    .then(function (snapshot) {
+      const lista = document.getElementById('pf-lista-empleados');
+      lista.innerHTML = '<h2 style="width:100%;">Empleados registrados</h2>';
+      if (snapshot.empty) {
+        lista.innerHTML += '<p>Todavía no has creado empleados.</p>';
+        return;
+      }
+      snapshot.forEach(function (doc) {
+        const e = doc.data();
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+        tarjeta.innerHTML = `
+          <h2>${e.nombre}</h2>
+          <p><strong>Correo:</strong> ${e.correo}</p>
+          <p><strong>Teléfono:</strong> ${e.telefono}</p>
+        `;
+        lista.appendChild(tarjeta);
+      });
+    });
+}
