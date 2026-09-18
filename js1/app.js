@@ -375,3 +375,85 @@ function procesarSolicitud(usuarioModerador, solicitudId, accion) {
     });
   });
 }
+// ===== Menú dinámico según sesión (todas las páginas) =====
+firebase.auth().onAuthStateChanged(function (user) {
+  const navAuthLink = document.getElementById('nav-auth-link');
+  if (!navAuthLink) return;
+
+  if (user) {
+    navAuthLink.textContent = 'Mi cuenta';
+    navAuthLink.setAttribute('href', 'cuenta.html');
+  } else {
+    navAuthLink.textContent = 'Iniciar sesión';
+    navAuthLink.setAttribute('href', 'login.html');
+  }
+});
+// ===== Mi Cuenta (cuenta.html) =====
+
+const cuentaNombreEl = document.getElementById('cuenta-nombre');
+
+if (cuentaNombreEl) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+      const perfil = doc.data();
+      cuentaNombreEl.textContent = perfil.nombre;
+      document.getElementById('cuenta-correo').textContent = perfil.correo;
+      document.getElementById('cuenta-rol').textContent = perfil.rol;
+      document.getElementById('cuenta-telefono-input').value = perfil.telefono || '';
+      document.getElementById('cuenta-pin-input').value = perfil.pinSeguridad || '';
+    });
+
+    document.getElementById('form-cuenta-telefono').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const nuevoTelefono = document.getElementById('cuenta-telefono-input').value;
+      const msg = document.getElementById('cuenta-telefono-mensaje');
+      db.collection('usuarios').doc(user.uid).update({ telefono: nuevoTelefono })
+        .then(() => { msg.textContent = 'Teléfono actualizado.'; msg.style.color = 'green'; })
+        .catch((err) => { msg.textContent = 'Error: ' + err.message; msg.style.color = 'red'; });
+    });
+
+    document.getElementById('form-cuenta-pin').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const nuevoPin = document.getElementById('cuenta-pin-input').value;
+      const msg = document.getElementById('cuenta-pin-mensaje');
+      db.collection('usuarios').doc(user.uid).update({ pinSeguridad: nuevoPin })
+        .then(() => { msg.textContent = 'PIN actualizado.'; msg.style.color = 'green'; })
+        .catch((err) => { msg.textContent = 'Error: ' + err.message; msg.style.color = 'red'; });
+    });
+
+    document.getElementById('form-cuenta-password').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const actual = document.getElementById('cuenta-password-actual').value;
+      const nueva = document.getElementById('cuenta-password-nueva').value;
+      const msg = document.getElementById('cuenta-password-mensaje');
+      const credencial = firebase.auth.EmailAuthProvider.credential(user.email, actual);
+
+      user.reauthenticateWithCredential(credencial)
+        .then(() => user.updatePassword(nueva))
+        .then(() => { msg.textContent = 'Contraseña actualizada.'; msg.style.color = 'green'; })
+        .catch((err) => { msg.textContent = 'Error: contraseña actual incorrecta u otro problema.'; msg.style.color = 'red'; });
+    });
+
+    document.getElementById('form-cuenta-correo').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const actual = document.getElementById('cuenta-correo-password').value;
+      const nuevoCorreo = document.getElementById('cuenta-correo-nuevo').value;
+      const msg = document.getElementById('cuenta-correo-mensaje');
+      const credencial = firebase.auth.EmailAuthProvider.credential(user.email, actual);
+
+      user.reauthenticateWithCredential(credencial)
+        .then(() => user.updateEmail(nuevoCorreo))
+        .then(() => db.collection('usuarios').doc(user.uid).update({ correo: nuevoCorreo }))
+        .then(() => {
+          msg.textContent = 'Correo actualizado. Vuelve a iniciar sesión con el correo nuevo.';
+          msg.style.color = 'green';
+        })
+        .catch((err) => { msg.textContent = 'Error: contraseña incorrecta o correo inválido.'; msg.style.color = 'red'; });
+    });
+  });
+}

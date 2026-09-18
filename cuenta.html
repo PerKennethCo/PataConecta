@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="login.html" id="nav-auth-link">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Mi cuenta</h1>
+        </section>
+
+        <section class="formulario-container">
+            <p><strong>Nombre:</strong> <span id="cuenta-nombre"></span></p>
+            <p><strong>Correo actual:</strong> <span id="cuenta-correo"></span></p>
+            <p><strong>Rol:</strong> <span id="cuenta-rol"></span></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <h2>Actualizar teléfono</h2>
+            <form id="form-cuenta-telefono">
+                <label for="cuenta-telefono-input">Nuevo teléfono</label>
+                <input type="tel" id="cuenta-telefono-input" required>
+                <button type="submit">Guardar teléfono</button>
+            </form>
+            <p id="cuenta-telefono-mensaje"></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <h2>Actualizar PIN de seguridad</h2>
+            <form id="form-cuenta-pin">
+                <label for="cuenta-pin-input">Nuevo PIN (2 dígitos)</label>
+                <input type="text" id="cuenta-pin-input" pattern="\d{2}" maxlength="2" required>
+                <button type="submit">Guardar PIN</button>
+            </form>
+            <p id="cuenta-pin-mensaje"></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <h2>Cambiar contraseña</h2>
+            <form id="form-cuenta-password">
+                <label for="cuenta-password-actual">Contraseña actual</label>
+                <input type="password" id="cuenta-password-actual" required>
+                <label for="cuenta-password-nueva">Nueva contraseña</label>
+                <input type="password" id="cuenta-password-nueva" minlength="6" required>
+                <button type="submit">Cambiar contraseña</button>
+            </form>
+            <p id="cuenta-password-mensaje"></p>
+        </section>
+
+        <section class="formulario-container" style="margin-top:24px;">
+            <h2>Cambiar correo</h2>
+            <form id="form-cuenta-correo">
+                <label for="cuenta-correo-password">Contraseña actual (para confirmar)</label>
+                <input type="password" id="cuenta-correo-password" required>
+                <label for="cuenta-correo-nuevo">Nuevo correo</label>
+                <input type="email" id="cuenta-correo-nuevo" required>
+                <button type="submit">Cambiar correo</button>
+            </form>
+            <p id="cuenta-correo-mensaje"></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>
