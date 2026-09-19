@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicar a Adopción — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">🐾 PataConecta</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="login.html" id="nav-auth-link">Iniciar sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Solicitud de adopción responsable</h1>
+            <p>Cuéntanos un poco de ti para que la fundación pueda evaluar si puedes darle un buen hogar a <span id="aa-nombre-mascota" style="font-weight:bold;"></span>.</p>
+        </section>
+
+        <p id="aa-mensaje-acceso" class="formulario-container"></p>
+
+        <section class="formulario-container" id="aa-form-container" style="display:none;">
+            <form id="form-aplicar-adopcion">
+
+                <label for="aa-ocupacion">¿Cuál es tu ocupación?</label>
+                <input type="text" id="aa-ocupacion" placeholder="Ej: Empleado, independiente, estudiante" required>
+
+                <label for="aa-ingresos">Rango de ingresos mensuales</label>
+                <select id="aa-ingresos" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="menos-1-smmlv">Menos de 1 salario mínimo</option>
+                    <option value="1-2-smmlv">Entre 1 y 2 salarios mínimos</option>
+                    <option value="2-3-smmlv">Entre 2 y 3 salarios mínimos</option>
+                    <option value="mas-3-smmlv">Más de 3 salarios mínimos</option>
+                </select>
+
+                <label for="aa-personas-cargo">Número de personas a tu cargo (hijos, familiares, etc.)</label>
+                <input type="number" id="aa-personas-cargo" min="0" required>
+
+                <label for="aa-tipo-vivienda">Tipo de vivienda</label>
+                <select id="aa-tipo-vivienda" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="casa">Casa</option>
+                    <option value="apartamento">Apartamento</option>
+                    <option value="finca">Finca / casa con patio grande</option>
+                    <option value="otro">Otro</option>
+                </select>
+
+                <label for="aa-otras-mascotas">¿Tienes otras mascotas actualmente?</label>
+                <select id="aa-otras-mascotas" required>
+                    <option value="">Selecciona una opción</option>
+                    <option value="si">Sí</option>
+                    <option value="no">No</option>
+                </select>
+
+                <label for="aa-mensaje">Cuéntale a la fundación por qué te gustaría adoptar</label>
+                <textarea id="aa-mensaje" rows="4" required></textarea>
+
+                <button type="submit">Enviar solicitud</button>
+            </form>
+            <p id="aa-mensaje-resultado" style="margin-top:12px;"></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>

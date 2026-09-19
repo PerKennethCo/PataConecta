@@ -162,41 +162,88 @@ if (formAdopcion) {
 
 const listaAdopcion = document.getElementById('lista-adopcion');
 
+// ===== Listado público de adopciones + botón de interés (adopcion.html) =====
+
 if (listaAdopcion) {
-  db.collection('adopciones')
-    .orderBy('fechaCreacion', 'desc')
-    .get()
-    .then(function (snapshot) {
+  firebase.auth().onAuthStateChanged(function (usuarioActual) {
+    db.collection('adopciones')
+      .orderBy('fechaCreacion', 'desc')
+      .get()
+      .then(function (snapshot) {
+        listaAdopcion.innerHTML = '';
+        if (snapshot.empty) {
+          listaAdopcion.innerHTML = '<p>Todavía no hay mascotas publicadas en adopción.</p>';
+          return;
+        }
+        snapshot.forEach(function (doc) {
+          const a = doc.data();
+          const tarjeta = document.createElement('article');
+          tarjeta.classList.add('reporte-card');
+          tarjeta.innerHTML = `
+            <span class="etiqueta ${a.estado === 'adoptada' ? 'perdida' : 'encontrada'}">${etiquetaEstado(a.estado || 'publicada')}</span>
+            <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+            <h2>${a.nombreMascota || 'Sin nombre'}</h2>
+            <p><strong>Tipo:</strong> ${a.tipoMascota} — ${a.edad}</p>
+            <p><strong>Sector:</strong> ${a.sector}</p>
+            <p>${a.descripcion || ''}</p>
+          `;
 
-      if (snapshot.empty) {
-        listaAdopcion.innerHTML = '<p>Todavía no hay mascotas publicadas en adopción.</p>';
-        return;
-      }
+          if (a.estado !== 'adoptada') {
+            if (usuarioActual) {
+            const enlaceInteres = document.createElement('a');
+            enlaceInteres.href = 'aplicar-adopcion.html?id=' + doc.id;
+            enlaceInteres.textContent = 'Estoy interesado/a en adoptarla';
+            enlaceInteres.style.display = 'inline-block';
+            enlaceInteres.style.marginTop = '8px';
+            tarjeta.appendChild(enlaceInteres);
+            } else {
+              const aviso = document.createElement('p');
+              aviso.innerHTML = '<a href="login.html">Inicia sesión</a> para aplicar a esta adopción.';
+              tarjeta.appendChild(aviso);
+            }
+          }
 
-      snapshot.forEach(function (doc) {
-        const a = doc.data();
-
-        const tarjeta = document.createElement('article');
-        tarjeta.classList.add('reporte-card');
-
-        tarjeta.innerHTML = `
-          <span class="etiqueta encontrada">En adopción</span>
-          <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
-          <h2>${a.nombreMascota || 'Sin nombre'}</h2>
-          <p><strong>Tipo:</strong> ${a.tipoMascota} — ${a.edad}</p>
-          <p><strong>Sector:</strong> ${a.sector}</p>
-          <p>${a.descripcion || ''}</p>
-          <p><strong>Contacto:</strong> ${a.nombreContacto} — ${a.telefono}</p>
-        `;
-
-        listaAdopcion.appendChild(tarjeta);
+          listaAdopcion.appendChild(tarjeta);
+        });
+      })
+      .catch(function () {
+        listaAdopcion.innerHTML = '<p>Hubo un error al cargar las publicaciones.</p>';
       });
+  });
+}
 
-    })
-    .catch(function (error) {
-      console.error('Error al cargar las adopciones: ', error);
-      listaAdopcion.innerHTML = '<p>Hubo un error al cargar las publicaciones.</p>';
+function enviarSolicitudAdopcion(mascotaId, mascota) {
+  const user = firebase.auth().currentUser;
+
+  db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+    const perfil = doc.data();
+    if (perfil.rol !== 'usuario') {
+      alert('Solo las cuentas de usuario pueden aplicar a una adopción.');
+      return;
+    }
+
+    const mensaje = prompt('Cuéntale brevemente a la fundación por qué te gustaría adoptar a ' + (mascota.nombreMascota || 'esta mascota') + ':');
+    if (mensaje === null) return; // canceló
+
+    db.collection('solicitudes-adopcion').add({
+      mascotaId: mascotaId,
+      nombreMascota: mascota.nombreMascota || '',
+      usuarioId: user.uid,
+      nombreUsuario: perfil.nombre,
+      correoUsuario: perfil.correo,
+      telefonoUsuario: perfil.telefono,
+      fundacionId: mascota.fundacionId,
+      contactoNombre: mascota.nombreContacto || '',
+      contactoTelefono: mascota.telefono || '',
+      mensaje: mensaje,
+      estado: 'pendiente',
+      fechaSolicitud: new Date().toISOString()
+    }).then(function () {
+      alert('¡Tu solicitud fue enviada! Puedes ver su estado en "Mis aplicaciones".');
+    }).catch(function (error) {
+      alert('Error al enviar la solicitud: ' + error.message);
     });
+  });
 }
 
 
@@ -412,7 +459,9 @@ if (cuentaNombreEl) {
       document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="panel-empleado.html">Ir a mi panel de empleado →</a></p>');
       } else if (perfil.rol === 'moderador') {
       document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="moderador.html">Ir a mi panel de moderador →</a></p>');
-      }
+      } else if (perfil.rol === 'usuario') {
+      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="mis-aplicaciones.html">Ver mis aplicaciones de adopción →</a></p>');
+       }
     });
 
     document.getElementById('form-cuenta-telefono').addEventListener('submit', function (e) {
@@ -645,6 +694,7 @@ if (peMensajeAcceso) {
       document.getElementById('pe-form-container').style.display = 'block';
 
       cargarAdopcionesEmpleado(user, perfil.fundacionId);
+      cargarSolicitudesAdopcion(user, perfil.fundacionId);
 
       document.getElementById('form-publicar-adopcion').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -720,4 +770,182 @@ function cargarAdopcionesEmpleado(user, fundacionId) {
         lista.appendChild(tarjeta);
       });
     });
+}
+// ===== Mis aplicaciones (mis-aplicaciones.html) =====
+
+const maMensajeAcceso = document.getElementById('ma-mensaje-acceso');
+
+if (maMensajeAcceso) {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      maMensajeAcceso.textContent = 'Debes iniciar sesión para ver tus aplicaciones.';
+      return;
+    }
+    maMensajeAcceso.textContent = '';
+
+    db.collection('solicitudes-adopcion').where('usuarioId', '==', user.uid).get()
+      .then(function (snapshot) {
+        const lista = document.getElementById('ma-lista');
+        lista.innerHTML = '';
+        if (snapshot.empty) {
+          lista.innerHTML = '<p>Todavía no has aplicado a ninguna adopción.</p>';
+          return;
+        }
+        snapshot.forEach(function (doc) {
+          const s = doc.data();
+          const tarjeta = document.createElement('article');
+          tarjeta.classList.add('reporte-card');
+
+          let contenidoEstado = '';
+          if (s.estado === 'pendiente') {
+            contenidoEstado = '<p>⏳ Tu solicitud está siendo revisada por la fundación.</p>';
+          } else if (s.estado === 'rechazada') {
+            contenidoEstado = '<p>Tu solicitud no fue aceptada en esta ocasión.</p>';
+          } else if (s.estado === 'aceptada') {
+            contenidoEstado = `
+              <p style="color:green; font-weight:bold;">🎉 ¡Felicidades! Tu solicitud fue aceptada.</p>
+              <p>Pronto se contactarán contigo. Mientras tanto, puedes comunicarte tú también:</p>
+              <p><strong>Contacto:</strong> ${s.contactoNombre} — ${s.contactoTelefono}</p>
+            `;
+          }
+
+          tarjeta.innerHTML = `
+            <span class="etiqueta ${s.estado === 'rechazada' ? 'perdida' : 'encontrada'}">${s.estado === 'pendiente' ? 'Pendiente' : s.estado === 'aceptada' ? 'Aceptada' : 'Rechazada'}</span>
+            <h2>${s.nombreMascota}</h2>
+            <p><strong>Tu mensaje:</strong> ${s.mensaje}</p>
+            ${contenidoEstado}
+          `;
+          lista.appendChild(tarjeta);
+        });
+      });
+  });
+}
+
+function cargarSolicitudesAdopcion(usuarioEmpleado, fundacionId) {
+  db.collection('solicitudes-adopcion').where('fundacionId', '==', fundacionId).get()
+    .then(function (snapshot) {
+      const lista = document.getElementById('pe-lista-solicitudes');
+      lista.innerHTML = '<h2 style="width:100%;">Solicitudes de adopción recibidas</h2>';
+      if (snapshot.empty) {
+        lista.innerHTML += '<p>Todavía no hay solicitudes.</p>';
+        return;
+      }
+      snapshot.forEach(function (doc) {
+        const s = doc.data();
+        const tarjeta = document.createElement('article');
+        tarjeta.classList.add('reporte-card');
+        tarjeta.innerHTML = `
+        <span class="etiqueta ${s.estado === 'rechazada' ? 'perdida' : 'encontrada'}">${s.estado === 'pendiente' ? 'Pendiente' : s.estado === 'aceptada' ? 'Aceptada' : 'Rechazada'}</span>
+        <h2>${s.nombreMascota}</h2>
+        <p><strong>Solicitante:</strong> ${s.nombreUsuario}</p>
+        <p><strong>Contacto:</strong> ${s.correoUsuario} — ${s.telefonoUsuario}</p>
+        <p><strong>Ocupación:</strong> ${s.ocupacion || 'No especificado'}</p>
+        <p><strong>Ingresos:</strong> ${s.ingresos || 'No especificado'}</p>
+        <p><strong>Personas a cargo:</strong> ${s.personasACargo ?? 'No especificado'}</p>
+        <p><strong>Tipo de vivienda:</strong> ${s.tipoVivienda || 'No especificado'}</p>
+        <p><strong>¿Otras mascotas?:</strong> ${s.otrasMascotas === 'si' ? 'Sí' : 'No'}</p>
+        <p><strong>Mensaje:</strong> ${s.mensaje}</p>
+        `;
+
+        if (s.estado === 'pendiente') {
+          const btnAceptar = document.createElement('button');
+          btnAceptar.setAttribute('type', 'button');
+          btnAceptar.textContent = 'Aceptar';
+          btnAceptar.addEventListener('click', function () {
+            db.collection('solicitudes-adopcion').doc(doc.id).update({ estado: 'aceptada' })
+              .then(() => cargarSolicitudesAdopcion(usuarioEmpleado, fundacionId));
+          });
+
+          const btnRechazar = document.createElement('button');
+          btnRechazar.setAttribute('type', 'button');
+          btnRechazar.textContent = 'Rechazar';
+          btnRechazar.style.backgroundColor = '#D32F2F';
+          btnRechazar.addEventListener('click', function () {
+            db.collection('solicitudes-adopcion').doc(doc.id).update({ estado: 'rechazada' })
+              .then(() => cargarSolicitudesAdopcion(usuarioEmpleado, fundacionId));
+          });
+
+          tarjeta.appendChild(btnAceptar);
+          tarjeta.appendChild(btnRechazar);
+        }
+
+        lista.appendChild(tarjeta);
+      });
+    });
+}
+// ===== Aplicar a una adopción (aplicar-adopcion.html) =====
+
+const aaFormContainer = document.getElementById('aa-form-container');
+
+if (aaFormContainer) {
+  const params = new URLSearchParams(window.location.search);
+  const mascotaId = params.get('id');
+  const aaMensajeAcceso = document.getElementById('aa-mensaje-acceso');
+
+  if (!mascotaId) {
+    aaMensajeAcceso.textContent = 'No se especificó ninguna mascota.';
+  } else {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) {
+        aaMensajeAcceso.textContent = 'Debes iniciar sesión para aplicar a una adopción.';
+        return;
+      }
+
+      db.collection('usuarios').doc(user.uid).get().then(function (perfilDoc) {
+        const perfil = perfilDoc.data();
+        if (perfil.rol !== 'usuario') {
+          aaMensajeAcceso.textContent = 'Solo las cuentas de usuario pueden aplicar a una adopción.';
+          return;
+        }
+
+        db.collection('adopciones').doc(mascotaId).get().then(function (mascotaDoc) {
+          if (!mascotaDoc.exists) {
+            aaMensajeAcceso.textContent = 'Esta publicación ya no existe.';
+            return;
+          }
+          const mascota = mascotaDoc.data();
+          document.getElementById('aa-nombre-mascota').textContent = mascota.nombreMascota || 'esta mascota';
+          aaMensajeAcceso.textContent = '';
+          aaFormContainer.style.display = 'block';
+
+          document.getElementById('form-aplicar-adopcion').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const solicitud = {
+              mascotaId: mascotaId,
+              nombreMascota: mascota.nombreMascota || '',
+              usuarioId: user.uid,
+              nombreUsuario: perfil.nombre,
+              correoUsuario: perfil.correo,
+              telefonoUsuario: perfil.telefono,
+              fundacionId: mascota.fundacionId,
+              contactoNombre: mascota.nombreContacto || '',
+              contactoTelefono: mascota.telefono || '',
+              ocupacion: document.getElementById('aa-ocupacion').value,
+              ingresos: document.getElementById('aa-ingresos').value,
+              personasACargo: document.getElementById('aa-personas-cargo').value,
+              tipoVivienda: document.getElementById('aa-tipo-vivienda').value,
+              otrasMascotas: document.getElementById('aa-otras-mascotas').value,
+              mensaje: document.getElementById('aa-mensaje').value,
+              estado: 'pendiente',
+              fechaSolicitud: new Date().toISOString()
+            };
+
+            const msg = document.getElementById('aa-mensaje-resultado');
+
+            db.collection('solicitudes-adopcion').add(solicitud)
+              .then(function () {
+                msg.textContent = '¡Tu solicitud fue enviada! Puedes ver su estado en "Mis aplicaciones".';
+                msg.style.color = 'green';
+                document.getElementById('form-aplicar-adopcion').reset();
+              })
+              .catch(function (error) {
+                msg.textContent = 'Error al enviar la solicitud: ' + error.message;
+                msg.style.color = 'red';
+              });
+          });
+        });
+      });
+    });
+  }
 }
