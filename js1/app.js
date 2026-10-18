@@ -1,41 +1,179 @@
-const formReporte = document.getElementById('form-reporte');
+// ===== Utilidades compartidas =====
+const API_BASE = 'https://pata-conecta-backend.vercel.app/api';
 
-if (formReporte) {
-  formReporte.addEventListener('submit', function (e) {
-    e.preventDefault(); 
-
-    const nuevoReporte = {
-      tipoReporte: formReporte['tipo-reporte'].value, 
-      tipoMascota: document.getElementById('tipo-mascota').value,
-      nombreMascota: document.getElementById('nombre-mascota').value,
-      raza: document.getElementById('raza').value,
-      sector: document.getElementById('sector').value,
-      fecha: document.getElementById('fecha').value,
-      descripcion: document.getElementById('descripcion').value,
-      nombreContacto: document.getElementById('nombre-contacto').value,
-      telefono: document.getElementById('telefono').value,
-      fechaCreacion: new Date().toISOString()
-    };
-
-    db.collection('reportes').add(nuevoReporte)
-      .then(function () {
-        alert('¡Reporte enviado con éxito! Gracias por ayudar a reencontrar mascotas en Kennedy.');
-        formReporte.reset();
-      })
-      .catch(function (error) {
-        console.error('Error al guardar el reporte: ', error);
-        alert('Hubo un error al enviar tu reporte. Intenta de nuevo.');
-      });
+// Escapa texto antes de insertarlo con innerHTML (evita que alguien inyecte código en las tarjetas)
+function esc(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
 
-// ===== Mostrar reportes desde Firestore (listado.html) =====
+const NOMBRE_SECTOR = {
+  'kennedy-central': 'Kennedy Central',
+  'patio-bonito': 'Patio Bonito',
+  'corabastos': 'Corabastos',
+  'timiza': 'Timiza',
+  'castilla': 'Castilla',
+  'tintal': 'Tintal',
+  'britalia': 'Britalia',
+  'otro': 'Otro'
+};
+
+function nombreSector(sector) {
+  return NOMBRE_SECTOR[sector] || sector || '';
+}
+
+function formatoPesos(valor) {
+  return '$' + Number(valor).toLocaleString('es-CO') + ' COP';
+}
+
+function formatoFechaHora(iso) {
+  const fecha = new Date(iso);
+  return isNaN(fecha) ? '' : fecha.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// El código del collar se guarda sin espacios ni guiones y en mayúsculas,
+// así "ab-12 34" y "AB1234" cuentan como el mismo código. El backend hace lo mismo.
+function normalizarCodigo(codigo) {
+  return String(codigo || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function fechaLocalHoy() {
+  const hoy = new Date();
+  hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
+  return hoy.toISOString().slice(0, 10);
+}
+
+// ===== Reportar mascota perdida (reportar.html) — solo con sesión de usuario =====
+// Solo existen reportes de mascotas PERDIDAS. Quien encuentra una mascota no crea un reporte:
+// pulsa "Mascota encontrada" en el listado y demuestra que la tiene con el código del collar.
+const formReporte = document.getElementById('form-reporte');
+
+if (formReporte) {
+  const accesoReporte = document.getElementById('reporte-mensaje-acceso');
+  const contenedorReporte = document.getElementById('reporte-form-container');
+  const inputCodigo = document.getElementById('codigo-collar');
+  const inputRecompensa = document.getElementById('recompensa');
+  const inputFecha = document.getElementById('fecha');
+  let usuarioReporte = null;
+  let perfilReporte = null;
+
+  inputFecha.max = fechaLocalHoy(); // no se permiten fechas futuras
+
+  function prellenarContacto() {
+    if (!perfilReporte) return;
+    const nombre = document.getElementById('nombre-contacto');
+    const telefono = document.getElementById('telefono');
+    if (!nombre.value) nombre.value = perfilReporte.nombre || '';
+    if (!telefono.value) telefono.value = perfilReporte.telefono || '';
+  }
+
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      usuarioReporte = null;
+      contenedorReporte.hidden = true;
+      accesoReporte.hidden = false;
+      accesoReporte.innerHTML = 'Para reportar una mascota debes <a class="enlace" href="login.html?perfil=usuario">iniciar sesión como usuario</a>.';
+      return;
+    }
+
+    db.collection('usuarios').doc(user.uid).get().then(function (doc) {
+      const perfil = doc.exists ? doc.data() : null;
+      if (!perfil || perfil.rol !== 'usuario') {
+        usuarioReporte = null;
+        contenedorReporte.hidden = true;
+        accesoReporte.hidden = false;
+        accesoReporte.textContent = 'Solo las cuentas de usuario pueden publicar reportes de mascotas.';
+        return;
+      }
+      usuarioReporte = user;
+      perfilReporte = perfil;
+      accesoReporte.hidden = true;
+      contenedorReporte.hidden = false;
+      prellenarContacto();
+    });
+  });
+
+  formReporte.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!usuarioReporte) return;
+
+    const msg = document.getElementById('reporte-mensaje');
+    const boton = formReporte.querySelector('button[type="submit"]');
+    const codigo = normalizarCodigo(inputCodigo.value);
+    const recompensa = inputRecompensa.value !== '' ? Number(inputRecompensa.value) : null;
+
+    if (codigo.length < 4 || codigo.length > 12) {
+      msg.textContent = 'El código del collar debe tener entre 4 y 12 letras o números.';
+      msg.style.color = 'red';
+      return;
+    }
+    if (recompensa !== null && (!Number.isFinite(recompensa) || recompensa <= 0)) {
+      msg.textContent = 'La recompensa debe ser un valor en pesos mayor a cero, o déjala vacía.';
+      msg.style.color = 'red';
+      return;
+    }
+
+    const ahora = new Date().toISOString();
+    const reporteRef = db.collection('reportes').doc(); // ID generado antes de guardar
+
+    // Parte PÚBLICA del reporte: sin código, sin nombre y sin teléfono del dueño
+    const nuevoReporte = {
+      tipoReporte: 'perdida',
+      tipoMascota: document.getElementById('tipo-mascota').value,
+      nombreMascota: document.getElementById('nombre-mascota').value.trim(),
+      raza: document.getElementById('raza').value.trim(),
+      sector: document.getElementById('sector').value,
+      fecha: inputFecha.value,
+      descripcion: document.getElementById('descripcion').value.trim(),
+      recompensa: recompensa,              // pública (null si no ofrece)
+      tieneCodigoCollar: true,
+      hallazgoVerificado: false,           // solo el backend lo cambia a true ("Encontrada")
+      usuarioId: usuarioReporte.uid,       // autor del reporte (RF-03)
+      fechaCreacion: ahora
+    };
+
+    // Parte PRIVADA: código del collar y contacto del dueño.
+    // Solo la lee el dueño; el backend la entrega a quien escriba el código correcto.
+    const datosPrivados = {
+      codigo: codigo,
+      nombreContacto: document.getElementById('nombre-contacto').value.trim(),
+      telefono: document.getElementById('telefono').value.trim(),
+      usuarioId: usuarioReporte.uid,
+      fechaCreacion: ahora
+    };
+
+    const batch = db.batch();
+    batch.set(reporteRef, nuevoReporte);
+    batch.set(db.collection('codigos-collar').doc(reporteRef.id), datosPrivados);
+
+    boton.disabled = true;
+    batch.commit()
+      .then(function () {
+        msg.innerHTML = '¡Reporte publicado! Puedes seguirlo en <a class="enlace" href="mis-reportes.html">Mis reportes</a>.';
+        msg.style.color = 'green';
+        formReporte.reset();
+        prellenarContacto();
+      })
+      .catch(function (error) {
+        console.error('Error al guardar el reporte: ', error);
+        msg.textContent = 'Hubo un error al enviar tu reporte. Intenta de nuevo.';
+        msg.style.color = 'red';
+      })
+      .finally(function () { boton.disabled = false; });
+  });
+}
+
+// ===== Listado de mascotas perdidas (listado.html) =====
 
 const listaReportes = document.getElementById('lista-reportes');
-const filtroTipo = document.getElementById('filtro-tipo');
+const filtroTipo = document.getElementById('filtro-tipo');   // filtra por estado: perdida / encontrada
 const filtroSector = document.getElementById('filtro-sector');
 
 let todosLosReportes = []; // aquí guardamos los reportes ya traídos de Firestore
+let reportesCargados = false;
+// contactosDueno: { reporteId: {nombre, telefono} } de las mascotas que ESTE usuario encontró
+let sesionListado = { user: null, rol: null, contactosDueno: {} };
 
 const coordenadasSector = {
   'kennedy-central': [4.6318, -74.1469],
@@ -47,74 +185,6 @@ const coordenadasSector = {
   'britalia': [4.6280, -74.1370],
   'otro': [4.6318, -74.1469]
 };
-
-function renderReportes() {
-  listaReportes.innerHTML = '';
-
-  if (capaMarcadores) {
-    capaMarcadores.clearLayers(); // borra los pines anteriores antes de dibujar los nuevos
-  }
-
-  const tipoSeleccionado = filtroTipo.value;
-  const sectorSeleccionado = filtroSector.value;
-
-  const reportesFiltrados = todosLosReportes.filter(function (r) {
-    const coincideTipo = tipoSeleccionado === 'todos' || r.tipoReporte === tipoSeleccionado;
-    const coincideSector = sectorSeleccionado === 'todos' || r.sector === sectorSeleccionado;
-    return coincideTipo && coincideSector;
-  });
-
-  if (reportesFiltrados.length === 0) {
-    listaReportes.innerHTML = '<p>No hay reportes que coincidan con este filtro.</p>';
-    return;
-  }
-
-  reportesFiltrados.forEach(function (r) {
-    const tarjeta = document.createElement('article');
-    tarjeta.classList.add('reporte-card');
-
-    tarjeta.innerHTML = `
-      <span class="etiqueta ${r.tipoReporte}">${r.tipoReporte === 'perdida' ? 'Perdida' : 'Encontrada'}</span>
-      <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
-      <h2>${r.nombreMascota || 'Sin nombre'}</h2>
-      <p><strong>Sector:</strong> ${r.sector}</p>
-      <p><strong>Fecha:</strong> ${r.fecha}</p>
-      <p>${r.raza} — ${r.descripcion || ''}</p>
-      <p><strong>Contacto:</strong> ${r.nombreContacto} — ${r.telefono}</p>
-    `;
-
-    listaReportes.appendChild(tarjeta);
-
-    // ===== Agregar el pin correspondiente en el mapa =====
-    if (capaMarcadores && coordenadasSector[r.sector]) {
-      const marcador = L.marker(coordenadasSector[r.sector]).bindPopup(`
-        <strong>${r.nombreMascota || 'Sin nombre'}</strong><br>
-        ${r.tipoReporte === 'perdida' ? '🔴 Perdida' : '🟢 Encontrada'}<br>
-        ${r.sector}
-      `);
-      capaMarcadores.addLayer(marcador);
-    }
-  });
-}
-
-if (listaReportes) {
-  db.collection('reportes')
-    .orderBy('fechaCreacion', 'desc')
-    .get()
-    .then(function (snapshot) {
-      todosLosReportes = snapshot.docs.map(function (doc) {
-        return doc.data();
-      });
-      renderReportes();
-    })
-    .catch(function (error) {
-      console.error('Error al cargar los reportes: ', error);
-      listaReportes.innerHTML = '<p>Hubo un error al cargar los reportes.</p>';
-    });
-
-  filtroTipo.addEventListener('change', renderReportes);
-  filtroSector.addEventListener('change', renderReportes);
-}
 
 const contenedorMapa = document.getElementById('mapa');
 let mapa;
@@ -129,6 +199,347 @@ if (contenedorMapa) {
   }).addTo(mapa);
 
   capaMarcadores = L.layerGroup().addTo(mapa);
+}
+
+function estadoReporte(r) {
+  return r.hallazgoVerificado ? 'encontrada' : 'perdida';
+}
+
+// Caja con el contacto del dueño (solo para quien verificó el código)
+function cajaContactoDueno(contacto, titulo) {
+  const caja = document.createElement('div');
+  caja.className = 'contacto-dueno';
+  const tel = String(contacto.telefono || '').replace(/[^\d+]/g, '');
+  caja.innerHTML = `
+    <p class="felicidades">${esc(titulo)}</p>
+    <p><strong>Dueño:</strong> ${esc(contacto.nombre || 'Sin nombre')}</p>
+    <p><strong>Teléfono:</strong> ${tel ? `<a class="enlace" href="tel:${esc(tel)}">${esc(contacto.telefono)}</a>` : 'No registrado'}</p>
+  `;
+  return caja;
+}
+
+// Botón "Mascota encontrada": quien la tiene escribe el código del collar.
+// El backend lo compara sin revelarlo y, si coincide, entrega el contacto del dueño.
+function agregarAccionHallazgo(tarjeta, r) {
+  const user = sesionListado.user;
+  const rol = sesionListado.rol;
+
+  if (!user) {
+    const aviso = document.createElement('p');
+    aviso.className = 'nota';
+    aviso.innerHTML = '¿La encontraste? <a class="enlace" href="login.html?perfil=usuario">Inicia sesión</a> para verificar el código de su collar.';
+    tarjeta.appendChild(aviso);
+    return;
+  }
+  if (rol !== 'usuario') return;
+  if (r.usuarioId === user.uid) {
+    const propio = document.createElement('p');
+    propio.className = 'nota';
+    propio.textContent = 'Este es tu reporte.';
+    tarjeta.appendChild(propio);
+    return;
+  }
+
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'boton-hallazgo';
+  boton.textContent = '🐾 Mascota encontrada';
+
+  const form = document.createElement('form');
+  form.className = 'form-hallazgo';
+  form.hidden = true;
+  form.innerHTML = `
+    <p class="ayuda">Escribe el código o PIN que aparece en el collar de la mascota.</p>
+    <label>Código del collar
+      <input type="text" name="codigo" maxlength="16" autocomplete="off" required>
+    </label>
+    <label>Mensaje para el dueño (opcional)
+      <textarea name="mensaje" rows="2" maxlength="500"></textarea>
+    </label>
+    <button type="submit">Verificar código</button>
+    <p class="resultado" role="status" aria-live="polite"></p>
+  `;
+
+  boton.addEventListener('click', function () {
+    form.hidden = !form.hidden;
+    if (!form.hidden) form.codigo.focus();
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const resultado = form.querySelector('.resultado');
+    const btnVerificar = form.querySelector('button[type="submit"]');
+    btnVerificar.disabled = true;
+    resultado.textContent = 'Verificando…';
+    resultado.style.color = '';
+
+    user.getIdToken()
+      .then(function (idToken) {
+        return fetch(API_BASE + '/verificar-collar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+          body: JSON.stringify({ reporteId: r.id, codigo: form.codigo.value, mensaje: form.mensaje.value })
+        });
+      })
+      .then(function (resp) {
+        return resp.json().then(function (data) { return { ok: resp.ok, data: data }; });
+      })
+      .then(function (respuesta) {
+        if (respuesta.ok) {
+          // Código correcto: mostramos el contacto del dueño
+          r.hallazgoVerificado = true;
+          sesionListado.contactosDueno[r.id] = respuesta.data.contacto || {};
+          form.remove();
+          boton.remove();
+          const etiqueta = tarjeta.querySelector('.etiqueta');
+          etiqueta.className = 'etiqueta encontrada';
+          etiqueta.textContent = 'Encontrada ✅';
+          const recompensa = tarjeta.querySelector('.recompensa');
+          if (recompensa) recompensa.remove();
+          const notaPrivada = tarjeta.querySelector('.nota-privada');
+          if (notaPrivada) notaPrivada.remove();
+          tarjeta.appendChild(cajaContactoDueno(sesionListado.contactosDueno[r.id],
+            '🎉 ¡Felicidades, encontraste la mascota! Este es el contacto de su dueño:'));
+        } else {
+          resultado.textContent = respuesta.data.error || 'No se pudo verificar el código.';
+          resultado.style.color = 'red';
+          btnVerificar.disabled = false;
+        }
+      })
+      .catch(function () {
+        resultado.textContent = 'Error de conexión. Intenta de nuevo.';
+        resultado.style.color = 'red';
+        btnVerificar.disabled = false;
+      });
+  });
+
+  tarjeta.appendChild(boton);
+  tarjeta.appendChild(form);
+}
+
+function renderReportes() {
+  if (!reportesCargados) return;
+  listaReportes.innerHTML = '';
+
+  if (capaMarcadores) {
+    capaMarcadores.clearLayers(); // borra los pines anteriores antes de dibujar los nuevos
+  }
+
+  const estadoSeleccionado = filtroTipo.value;
+  const sectorSeleccionado = filtroSector.value;
+
+  const reportesFiltrados = todosLosReportes.filter(function (r) {
+    const coincideEstado = estadoSeleccionado === 'todos' || estadoReporte(r) === estadoSeleccionado;
+    const coincideSector = sectorSeleccionado === 'todos' || r.sector === sectorSeleccionado;
+    return coincideEstado && coincideSector;
+  });
+
+  if (reportesFiltrados.length === 0) {
+    listaReportes.innerHTML = '<p>No hay reportes que coincidan con este filtro.</p>';
+    return;
+  }
+
+  reportesFiltrados.forEach(function (r) {
+    const encontrada = estadoReporte(r) === 'encontrada';
+    const tarjeta = document.createElement('article');
+    tarjeta.classList.add('reporte-card');
+
+    // El código del collar y el contacto del dueño NO están en el reporte público; aquí nunca se muestran.
+    tarjeta.innerHTML = `
+      <span class="etiqueta ${encontrada ? 'encontrada' : 'perdida'}">${encontrada ? 'Encontrada ✅' : 'Perdida'}</span>
+      <img src="https://placehold.co/300x200?text=Foto+mascota" alt="Foto de mascota">
+      <h2>${esc(r.nombreMascota || 'Sin nombre')}</h2>
+      ${!encontrada && r.recompensa ? `<p class="recompensa">💰 Recompensa: ${esc(formatoPesos(r.recompensa))}</p>` : ''}
+      <p><strong>Sector:</strong> ${esc(nombreSector(r.sector))}</p>
+      <p><strong>Se perdió el:</strong> ${esc(r.fecha)}</p>
+      <p>${esc(r.raza)}${r.descripcion ? ' — ' + esc(r.descripcion) : ''}</p>
+    `;
+
+    const contactoPropio = sesionListado.contactosDueno[r.id];
+
+    if (encontrada && contactoPropio) {
+      tarjeta.appendChild(cajaContactoDueno(contactoPropio, '🎉 Tú encontraste esta mascota. Contacto de su dueño:'));
+    } else if (encontrada) {
+      const nota = document.createElement('p');
+      nota.className = 'nota';
+      nota.textContent = 'Esta mascota ya fue encontrada: alguien verificó el código de su collar.';
+      tarjeta.appendChild(nota);
+    } else if (r.tieneCodigoCollar) {
+      const notaPrivada = document.createElement('p');
+      notaPrivada.className = 'nota nota-privada';
+      notaPrivada.textContent = '🔒 El contacto del dueño solo se muestra a quien verifique el código del collar.';
+      tarjeta.appendChild(notaPrivada);
+      agregarAccionHallazgo(tarjeta, r);
+    } else {
+      const antiguo = document.createElement('p');
+      antiguo.className = 'nota';
+      antiguo.textContent = 'Reporte anterior sin código de collar.';
+      tarjeta.appendChild(antiguo);
+    }
+
+    listaReportes.appendChild(tarjeta);
+
+    // ===== Agregar el pin correspondiente en el mapa =====
+    if (capaMarcadores && coordenadasSector[r.sector]) {
+      const marcador = L.marker(coordenadasSector[r.sector]).bindPopup(`
+        <strong>${esc(r.nombreMascota || 'Sin nombre')}</strong><br>
+        ${encontrada ? '🟢 Encontrada' : '🔴 Perdida'}${!encontrada && r.recompensa ? ' · 💰 ' + esc(formatoPesos(r.recompensa)) : ''}<br>
+        ${esc(nombreSector(r.sector))}
+      `);
+      capaMarcadores.addLayer(marcador);
+    }
+  });
+}
+
+if (listaReportes) {
+  db.collection('reportes')
+    .orderBy('fechaCreacion', 'desc')
+    .get()
+    .then(function (snapshot) {
+      todosLosReportes = snapshot.docs
+        .map(function (doc) { return Object.assign({ id: doc.id }, doc.data()); })
+        // Solo se publican mascotas perdidas (los antiguos reportes "encontrada" ya no se muestran)
+        .filter(function (r) { return r.tipoReporte === 'perdida'; });
+      reportesCargados = true;
+      renderReportes();
+    })
+    .catch(function (error) {
+      console.error('Error al cargar los reportes: ', error);
+      listaReportes.innerHTML = '<p>Hubo un error al cargar los reportes.</p>';
+    });
+
+  // Quién mira el listado: define si aparece el botón y si ve contactos de mascotas que ya encontró
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      sesionListado = { user: null, rol: null, contactosDueno: {} };
+      renderReportes();
+      return;
+    }
+    PataMenu.obtenerRol(user.uid)
+      .catch(function () { return null; })
+      .then(function (rol) {
+        if (rol !== 'usuario') return { rol: rol, contactos: {} };
+        return db.collection('hallazgos').where('encontradoPorId', '==', user.uid).get()
+          .then(function (snap) {
+            const contactos = {};
+            snap.forEach(function (doc) {
+              const h = doc.data();
+              if (h.contactoDueno) contactos[h.reporteId] = h.contactoDueno;
+            });
+            return { rol: rol, contactos: contactos };
+          })
+          .catch(function () { return { rol: rol, contactos: {} }; });
+      })
+      .then(function (info) {
+        sesionListado = { user: user, rol: info.rol, contactosDueno: info.contactos };
+        renderReportes();
+      });
+  });
+
+  filtroTipo.addEventListener('change', renderReportes);
+  filtroSector.addEventListener('change', renderReportes);
+}
+
+// ===== Mis reportes (mis-reportes.html) — estado de cada reporte y quién encontró la mascota =====
+
+const mrLista = document.getElementById('mr-lista');
+
+if (mrLista) {
+  const mrAcceso = document.getElementById('mr-mensaje-acceso');
+
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) {
+      mrLista.innerHTML = '';
+      mrAcceso.innerHTML = 'Debes <a class="enlace" href="login.html?perfil=usuario">iniciar sesión</a> para ver tus reportes.';
+      return;
+    }
+    mrAcceso.textContent = 'Cargando tus reportes…';
+
+    Promise.all([
+      db.collection('reportes').where('usuarioId', '==', user.uid).get(),
+      db.collection('hallazgos').where('duenoId', '==', user.uid).get()
+    ])
+      .then(function (resultados) {
+        const snapReportes = resultados[0];
+        const snapHallazgos = resultados[1];
+
+        const hallazgosPorReporte = {};
+        snapHallazgos.forEach(function (doc) {
+          const h = doc.data();
+          if (!hallazgosPorReporte[h.reporteId]) hallazgosPorReporte[h.reporteId] = [];
+          hallazgosPorReporte[h.reporteId].push(h);
+        });
+
+        mrAcceso.textContent = '';
+        mrLista.innerHTML = '';
+
+        if (snapReportes.empty) {
+          mrLista.innerHTML = '<p>Todavía no has publicado reportes. <a class="enlace" href="reportar.html">Reportar una mascota perdida</a></p>';
+          return;
+        }
+
+        const docs = snapReportes.docs.slice().sort(function (a, b) {
+          return (b.data().fechaCreacion || '').localeCompare(a.data().fechaCreacion || '');
+        });
+
+        docs.forEach(function (doc) {
+          const r = doc.data();
+          const antiguoEncontrada = r.tipoReporte !== 'perdida';
+          const encontrada = !!r.hallazgoVerificado;
+          const tarjeta = document.createElement('article');
+          tarjeta.classList.add('reporte-card');
+          if (encontrada) tarjeta.classList.add('reporte-resuelto');
+
+          tarjeta.innerHTML = `
+            <span class="etiqueta ${encontrada ? 'encontrada' : 'perdida'}">${encontrada ? 'Encontrada ✅' : 'Perdida'}</span>
+            <h2>${esc(r.nombreMascota || 'Sin nombre')}</h2>
+            <p class="estado-reporte"><strong>Estado:</strong> ${encontrada ? '✅ Encontrada — alguien verificó el código del collar' : (antiguoEncontrada ? 'Reporte antiguo (tipo "encontrada"), ya no se publica' : '🔍 Perdida — en búsqueda')}</p>
+            <p><strong>Sector:</strong> ${esc(nombreSector(r.sector))}</p>
+            <p><strong>Se perdió el:</strong> ${esc(r.fecha)}</p>
+            ${!antiguoEncontrada ? `<p><strong>Recompensa:</strong> ${r.recompensa ? esc(formatoPesos(r.recompensa)) : 'No ofrecida'}</p>` : ''}
+          `;
+
+          // Datos privados: código del collar y el contacto que verá quien la encuentre
+          if (r.tieneCodigoCollar) {
+            const privado = document.createElement('div');
+            privado.className = 'codigo-privado';
+            privado.innerHTML = '<p>🔒 <strong>Código del collar:</strong> <span class="codigo">cargando…</span></p><p class="ayuda">Solo tú ves el código. Tu nombre y teléfono solo se muestran a quien escriba el código correcto.</p>';
+            tarjeta.appendChild(privado);
+            db.collection('codigos-collar').doc(doc.id).get()
+              .then(function (c) { privado.querySelector('.codigo').textContent = c.exists ? c.data().codigo : 'no disponible'; })
+              .catch(function () { privado.querySelector('.codigo').textContent = 'no disponible'; });
+          }
+
+          (hallazgosPorReporte[doc.id] || []).forEach(function (h) {
+            const tel = String(h.telefono || '').replace(/[^\d+]/g, '');
+            const caja = document.createElement('div');
+            caja.className = 'hallazgo';
+            caja.innerHTML = `
+              <p class="felicidades">🎉 ¡Encontraron a tu mascota!</p>
+              <p><strong>La encontró:</strong> ${esc(h.nombre || 'Sin nombre')}</p>
+              <p><strong>Teléfono:</strong> ${tel ? `<a class="enlace" href="tel:${esc(tel)}">${esc(h.telefono)}</a>` : 'No registrado'}</p>
+              ${h.correo ? `<p><strong>Correo:</strong> ${esc(h.correo)}</p>` : ''}
+              ${h.mensaje ? `<p><strong>Mensaje:</strong> ${esc(h.mensaje)}</p>` : ''}
+              <p class="ayuda">Verificado el ${esc(formatoFechaHora(h.fecha))} — Consejo: entrega la recompensa solo cuando tengas a tu mascota contigo, en un lugar público.</p>
+            `;
+            tarjeta.appendChild(caja);
+          });
+
+          if (!encontrada && r.tieneCodigoCollar) {
+            const espera = document.createElement('p');
+            espera.className = 'nota';
+            espera.textContent = 'Si alguien te contacta diciendo que la encontró, pídele que pulse "Mascota encontrada" en PataConecta y escriba el código del collar.';
+            tarjeta.appendChild(espera);
+          }
+
+          mrLista.appendChild(tarjeta);
+        });
+      })
+      .catch(function (error) {
+        console.error('Error al cargar mis reportes: ', error);
+        mrAcceso.textContent = 'Hubo un error al cargar tus reportes.';
+      });
+  });
 }
 
 const formAdopcion = document.getElementById('form-adopcion');
@@ -449,7 +860,7 @@ function cargarSolicitudesPendientes(usuarioModerador) {
 
 function procesarSolicitud(usuarioModerador, solicitudId, accion) {
   usuarioModerador.getIdToken().then(function (idToken) {
-    fetch('https://pata-conecta-backend.vercel.app/api/aprobar-fundacion', {
+    fetch(API_BASE + '/aprobar-fundacion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
       body: JSON.stringify({ solicitudId, accion })
@@ -487,7 +898,7 @@ if (cuentaNombreEl) {
       } else if (perfil.rol === 'moderador') {
       document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="moderador.html">Ir a mi panel de moderador →</a></p>');
       } else if (perfil.rol === 'usuario') {
-      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="mis-aplicaciones.html">Ver mis aplicaciones de adopción →</a></p>');
+      document.querySelector('main').insertAdjacentHTML('afterbegin', '<p><a href="mis-reportes.html">Ver mis reportes →</a> · <a href="mis-aplicaciones.html">Ver mis aplicaciones de adopción →</a></p>');
        }
     });
 
@@ -562,7 +973,7 @@ if (formRecuperarPassword) {
     };
     const mensaje = document.getElementById('rec-mensaje');
 
-    fetch('https://pata-conecta-backend.vercel.app/api/recuperar-password', {
+    fetch(API_BASE + '/recuperar-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datos)
@@ -621,7 +1032,7 @@ if (pfMensajeAcceso) {
         const mensaje = document.getElementById('emp-mensaje');
 
         user.getIdToken().then(function (idToken) {
-          fetch('https://pata-conecta-backend.vercel.app/api/crear-empleado', {
+          fetch(API_BASE + '/crear-empleado', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
             body: JSON.stringify(datos)

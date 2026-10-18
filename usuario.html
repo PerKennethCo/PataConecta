@@ -16,14 +16,26 @@
         </section>
 
         <section class="acciones">
-            <a href="reportar.html" class="tarjeta">
+            <!-- Solo con sesión de usuario -->
+            <a href="reportar.html" class="tarjeta" data-requiere-rol="usuario" hidden>
                 <h2>📢 Reporta una Mascota Perdida</h2>
                 <p>Ayuda a encontrar mascotas perdidas reportándolas en nuestra plataforma.</p>
             </a>
 
+            <a href="mis-reportes.html" class="tarjeta" data-requiere-rol="usuario" hidden>
+                <h2>📋 Mis Reportes</h2>
+                <p>Revisa tus reportes, el código del collar y quién verificó haber encontrado tu mascota.</p>
+            </a>
+
+            <!-- Sin sesión de usuario -->
+            <a href="login.html?perfil=usuario" class="tarjeta" data-oculto-para-rol="usuario">
+                <h2>🔐 Inicia sesión para reportar</h2>
+                <p>Para reportar tu mascota perdida, o avisar que encontraste una, necesitas una cuenta de usuario.</p>
+            </a>
+
             <a href="listado.html" class="tarjeta">
                 <h2>🔍 Ver Reportes de Mascotas</h2>
-                <p>Consulta los reportes de mascotas perdidas y encontradas en tu área.</p>
+                <p>Consulta las mascotas perdidas en tu área. Si encontraste una, verifícala con el código de su collar.</p>
             </a>
 
             <a href="adopcion.html" class="tarjeta">

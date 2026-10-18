@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis reportes — PataConecta</title>
+    <link rel="stylesheet" href="css1/style.css">
+</head>
+<body data-perfil="usuario">
+    <header id="menu-principal"></header>
+
+    <main>
+        <section class="encabezado-pagina">
+            <h1>Mis reportes</h1>
+            <p>Aquí ves el código del collar de tus mascotas (solo tú) y quién verificó haberlas encontrado.</p>
+        </section>
+        <p id="mr-mensaje-acceso" class="formulario-container" role="status" aria-live="polite"></p>
+        <section class="lista-reportes" id="mr-lista"></section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="js1/firebase-config.js"></script>
+    <script src="js1/menu.js"></script>
+    <script src="js1/app.js"></script>
+</body>
+</html>

@@ -468,3 +468,164 @@ footer{
     gap: 8px;
   }
 }
+/* ===== Reportes: código de collar, recompensa y hallazgos ===== */
+
+/* Cajas de mensaje vacías no se muestran */
+.formulario-container:empty {
+    display: none;
+}
+
+.grupo-radio {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.grupo-radio legend {
+    font-weight: 600;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+.campos-perdida {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background-color: #f1f8e9;
+    border: 1px solid #c5e1a5;
+    border-radius: 10px;
+    padding: 4px 14px 14px;
+    margin-top: 10px;
+}
+
+.campos-perdida[hidden] {
+    display: none;
+}
+
+.ayuda {
+    font-size: 0.85rem;
+    color: #546e7a;
+}
+
+.etiqueta.verificada {
+    background-color: var(--azul);
+    margin-left: 4px;
+}
+
+.recompensa {
+    display: inline-block;
+    background-color: #fff8e1;
+    border: 1px solid #ffca28;
+    color: #6d4c00;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-weight: 700;
+    margin: 4px 0 8px;
+}
+
+.nota {
+    font-size: 0.85rem;
+    color: #546e7a;
+    margin-top: 8px;
+}
+
+.reporte-card button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background-color: var(--verde);
+    color: var(--blanco);
+    border: none;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.reporte-card button:hover:not(:disabled) {
+    background-color: #1b5e20;
+}
+
+.reporte-card button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-hallazgo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 12px;
+    background-color: #f5f7f8;
+    border-radius: 10px;
+}
+
+.form-hallazgo[hidden] {
+    display: none;
+}
+
+.form-hallazgo label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-hallazgo input,
+.form-hallazgo textarea {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.form-hallazgo .resultado {
+    font-size: 0.9rem;
+}
+
+.codigo-privado {
+    background-color: #eceff1;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-top: 8px;
+}
+
+.codigo-privado span {
+    font-family: Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.hallazgo {
+    border-left: 4px solid var(--azul);
+    background-color: #e3f2fd;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 10px;
+}
+
+/* Contacto del dueño, visible solo tras verificar el código del collar */
+.contacto-dueno {
+    border-left: 4px solid var(--verde);
+    background-color: #e8f5e9;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 10px;
+}
+
+.felicidades {
+    font-weight: 700;
+    color: var(--verde);
+    margin-bottom: 6px;
+}
+
+.estado-reporte {
+    background-color: #f5f7f8;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.reporte-resuelto {
+    border-top: 4px solid var(--verde);
+}

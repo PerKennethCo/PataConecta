@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Rol del usuario que hace la petición (guardado en /usuarios/{uid})
+    function rolActual() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
+    }
+
+    // ===== Reportes de mascotas (solo PERDIDAS) =====
+    // Lectura pública. Crear: solo usuarios con sesión, a su nombre.
+    // El reporte público NO puede llevar el código del collar ni el nombre/teléfono del dueño:
+    // esos datos van en /codigos-collar y solo el backend los entrega tras verificar el código.
+    // hallazgoVerificado (estado "Encontrada") solo lo cambia el backend (verificar-collar).
+    match /reportes/{reporteId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && rolActual() == 'usuario'
+                    && request.resource.data.usuarioId == request.auth.uid
+                    && request.resource.data.tipoReporte == 'perdida'
+                    && request.resource.data.tieneCodigoCollar == true
+                    && !request.resource.data.keys().hasAny(['codigo', 'codigoCollar', 'telefono', 'nombreContacto'])
+                    && request.resource.data.get('hallazgoVerificado', false) == false
+                    && (request.resource.data.get('recompensa', null) == null
+                        || (request.resource.data.recompensa is number
+                            && request.resource.data.recompensa > 0));
+      allow update, delete: if false;
+    }
+
+    // ===== Datos privados del reporte: código del collar + contacto del dueño =====
+    // Solo el dueño puede crearlo (en el mismo batch que el reporte) y leerlo.
+    // La verificación la hace el backend con permisos de administrador.
+    match /codigos-collar/{reporteId} {
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['codigo', 'nombreContacto', 'telefono', 'usuarioId', 'fechaCreacion'])
+                    && request.resource.data.usuarioId == request.auth.uid
+                    && request.resource.data.codigo is string
+                    && request.resource.data.codigo.size() >= 4
+                    && request.resource.data.codigo.size() <= 12
+                    && request.resource.data.nombreContacto is string
+                    && request.resource.data.telefono is string
+                    && getAfter(/databases/$(database)/documents/reportes/$(reporteId)).data.usuarioId == request.auth.uid
+                    && getAfter(/databases/$(database)/documents/reportes/$(reporteId)).data.tipoReporte == 'perdida';
+      allow read: if request.auth != null && resource.data.usuarioId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ===== Hallazgos verificados =====
+    // Los crea solo el backend. Los ven el dueño (datos de quien la encontró)
+    // y quien la encontró (contacto del dueño, en contactoDueno).
+    match /hallazgos/{hallazgoId} {
+      allow read: if request.auth != null
+                  && (resource.data.duenoId == request.auth.uid
+                      || resource.data.encontradoPorId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // /intentos-collar no tiene reglas: nadie puede leerlo ni escribirlo desde el navegador.
+
+    match /adopciones/{doc} {
+      allow read: if true;
+      allow create: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'empleado' &&
+                    request.resource.data.empleadoId == request.auth.uid &&
+                    request.resource.data.fundacionId == get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fundacionId &&
+                    request.resource.data.estado == 'publicada';
+      allow update: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'empleado' &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fundacionId == resource.data.fundacionId &&
+                    request.resource.data.fundacionId == resource.data.fundacionId &&
+                    request.resource.data.empleadoId == resource.data.empleadoId;
+      allow delete: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'moderador';
+    }
+
+    match /usuarios/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null &&
+                  request.auth.uid == resource.data.fundacionId &&
+                  resource.data.rol == 'empleado';
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.rol == 'usuario';
+      // Cambio: el dueño solo puede modificar teléfono, PIN y correo (lo que permite "Mi cuenta").
+      // Antes podía cambiar otros campos como fundacionId: un empleado podía "mudarse" a otra fundación.
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['telefono', 'pinSeguridad', 'correo']);
+      allow delete: if false;
+    }
+
+    match /documentos-registrados/{documento} {
+      allow read: if request.auth != null;
+      // Cambio: solo se puede registrar el propio documento, como usuario, con el ID esperado.
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.rol == 'usuario'
+                    && documento == request.resource.data.documento + '_usuario';
+      allow update, delete: if false;
+    }
+
+    match /solicitudes-fundacion/{doc} {
+      allow create: if request.resource.data.estado == 'pendiente';
+      allow read: if request.auth != null &&
+                  get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'moderador';
+      allow update, delete: if false;
+    }
+
+    match /solicitudes-adopcion/{doc} {
+      allow create: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'usuario' &&
+                    request.resource.data.usuarioId == request.auth.uid &&
+                    request.resource.data.estado == 'pendiente';
+      allow read: if request.auth != null && resource.data.usuarioId == request.auth.uid;
+      allow read: if request.auth != null &&
+                  get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'empleado' &&
+                  get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fundacionId == resource.data.fundacionId;
+      allow update: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'empleado' &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.fundacionId == resource.data.fundacionId &&
+                    request.resource.data.usuarioId == resource.data.usuarioId &&
+                    request.resource.data.mascotaId == resource.data.mascotaId;
+      allow delete: if false;
+    }
+  }
+}

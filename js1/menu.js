@@ -35,9 +35,9 @@ const PataMenu = (function () {
 
   const MENUS = {
     usuario: {
+      // Sin sesión no se puede reportar: la opción no aparece
       invitado: [
         ['usuario.html', 'Inicio'],
-        ['reportar.html', 'Reportar mascota'],
         ['listado.html', 'Ver reportes'],
         ['adopcion.html', 'Adopción'],
         ['contacto.html', 'Contacto'],
@@ -47,6 +47,7 @@ const PataMenu = (function () {
         ['usuario.html', 'Inicio'],
         ['reportar.html', 'Reportar mascota'],
         ['listado.html', 'Ver reportes'],
+        ['mis-reportes.html', 'Mis reportes'],
         ['adopcion.html', 'Adopción'],
         ['mis-aplicaciones.html', 'Mis aplicaciones'],
         ['contacto.html', 'Contacto'],
@@ -162,7 +163,20 @@ const PataMenu = (function () {
     return li;
   }
 
+  // Elementos de la página que solo se muestran a un rol con sesión.
+  // Uso: <a ... data-requiere-rol="usuario" hidden> (empiezan ocultos para no parpadear)
+  function aplicarVisibilidadPorRol() {
+    const rol = conSesion ? rolActual : null;
+    document.querySelectorAll('[data-requiere-rol]').forEach(function (el) {
+      el.hidden = el.dataset.requiereRol !== rol;
+    });
+    document.querySelectorAll('[data-oculto-para-rol]').forEach(function (el) {
+      el.hidden = el.dataset.ocultoParaRol === rol;
+    });
+  }
+
   function render() {
+    aplicarVisibilidadPorRol();
     const header = document.getElementById('menu-principal');
     if (!header) return;
 
