@@ -3,54 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PataConecta</title>
+    <title>PataConecta — Elige tu perfil</title>
     <link rel="stylesheet" href="css1/style.css">
 </head>
-<body>
-    <header>
-        <div class="logo">🐾 PataConecta </div>
-            <nav>
-                <ul>
-                    <li><a href="login.html" id="nav-auth-link">Iniciar sesión</a></li>
-                    <li><a href="index.html">Inicio</a></li>
-                    <li><a href="reportar.html">Reportar Mascota</a></li>
-                    <li><a href="listado.html">Ver Reportes</a></li>
-                    <li><a href="adopcion.html">Adopción</a></li>
-                    <li><a href="contacto.html">Contacto</a></li>
-                    <li><a href="solicitud-fundacion.html">Soy una fundación</a></li>
-                </ul>
-            </nav>
-    </header>
+<body data-pagina="selector">
+    <header id="menu-principal"></header>
 
     <main>
         <section class="hero">
             <h1>Bienvenido a PataConecta</h1>
-            <p>Conectando mascotas con sus dueños y futuros hogares.</p>
+            <p>Conectando mascotas con sus dueños y futuros hogares en Kennedy. ¿Cómo quieres ingresar?</p>
         </section>
 
-        <section class="acciones">
-            <a href="reportar.html" class="tarjeta">
-                <h2>📢 Reporta una Mascota Perdida</h2>
-                <p>Ayuda a encontrar mascotas perdidas reportándolas en nuestra plataforma.</p>
+        <section class="selector-perfil" aria-label="Elige tu perfil">
+            <a href="usuario.html" class="opcion-perfil perfil-usuario" data-elegir-perfil="usuario">
+                <span class="icono" aria-hidden="true">🙋</span>
+                <h2>Usuario</h2>
+                <p>Para la comunidad de Kennedy.</p>
+                <ul>
+                    <li>Reporta mascotas perdidas o encontradas</li>
+                    <li>Consulta reportes y el mapa</li>
+                    <li>Aplica a una adopción</li>
+                </ul>
+                <span class="cta">Entrar como usuario →</span>
             </a>
 
-            <a href="listado.html" class="tarjeta">
-                <h2>🔍 Ver Reportes de Mascotas</h2>
-                <p>Consulta los reportes de mascotas perdidas y encontradas en tu área.</p>
+            <a href="login.html?perfil=moderador" class="opcion-perfil perfil-moderador" data-elegir-perfil="moderador">
+                <span class="icono" aria-hidden="true">🛡️</span>
+                <h2>Moderador</h2>
+                <p>Para el equipo que cuida la plataforma.</p>
+                <ul>
+                    <li>Revisa solicitudes de fundaciones</li>
+                    <li>Modera el contenido publicado</li>
+                </ul>
+                <span class="cta">Entrar como moderador →</span>
             </a>
 
-            <a href="adopcion.html" class="tarjeta">
-                <h2>Adopta una Mascota</h2>
-                <p>Conoce mascotas disponibles para adopción responsable y encuentra tu nuevo compañero de vida.</p>
-            </a>
-
-            <a href="contacto.html" class="tarjeta">
-                <h2>Contacta con Nosotros</h2>
-                <p>Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.</p>
+            <a href="login.html?perfil=fundacion" class="opcion-perfil perfil-fundacion" data-elegir-perfil="fundacion">
+                <span class="icono" aria-hidden="true">🏠</span>
+                <h2>Fundación</h2>
+                <p>Para fundaciones y sus colaboradores.</p>
+                <ul>
+                    <li>Publica mascotas en adopción</li>
+                    <li>Gestiona solicitudes y tu equipo</li>
+                    <li>¿Aún sin cuenta? Solicita tu registro</li>
+                </ul>
+                <span class="cta">Entrar como fundación →</span>
             </a>
         </section>
     </main>
-        
+
     <footer>
         <p>&copy; 2026 PataConecta. Proyecto académico, Kennedy, Bogotá. Todos los derechos reservados.</p>
     </footer>
@@ -59,6 +61,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="js1/firebase-config.js"></script>
+    <script src="js1/menu.js"></script>
     <script src="js1/app.js"></script>
 </body>
 </html>

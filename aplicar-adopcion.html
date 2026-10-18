@@ -6,16 +6,8 @@
     <title>Aplicar a Adopción — PataConecta</title>
     <link rel="stylesheet" href="css1/style.css">
 </head>
-<body>
-    <header>
-        <div class="logo">🐾 PataConecta</div>
-        <nav>
-            <ul>
-                <li><a href="index.html">Inicio</a></li>
-                <li><a href="login.html" id="nav-auth-link">Iniciar sesión</a></li>
-            </ul>
-        </nav>
-    </header>
+<body data-perfil="usuario">
+    <header id="menu-principal"></header>
 
     <main>
         <section class="encabezado-pagina">
@@ -76,6 +68,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="js1/firebase-config.js"></script>
+    <script src="js1/menu.js"></script>
     <script src="js1/app.js"></script>
 </body>
 </html>

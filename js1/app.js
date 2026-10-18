@@ -198,7 +198,7 @@ if (listaAdopcion) {
             tarjeta.appendChild(enlaceInteres);
             } else {
               const aviso = document.createElement('p');
-              aviso.innerHTML = '<a href="login.html">Inicia sesión</a> para aplicar a esta adopción.';
+              aviso.innerHTML = '<a href="login.html?perfil=usuario">Inicia sesión como usuario</a> para aplicar a esta adopción.';
               tarjeta.appendChild(aviso);
             }
           }
@@ -251,22 +251,60 @@ const formLogin = document.getElementById('form-login');
 const formRegistro = document.getElementById('form-registro');
 const btnLogout = document.getElementById('btn-logout');
 
+// ===== Login según el perfil elegido en el inicio (login.html?perfil=...) =====
+const TEXTOS_LOGIN = {
+  usuario: {
+    titulo: 'Iniciar sesión como usuario',
+    subtitulo: 'Ingresa para aplicar a adopciones y seguir tus solicitudes. Si no tienes cuenta, regístrate abajo.'
+  },
+  moderador: {
+    titulo: 'Iniciar sesión como moderador',
+    subtitulo: 'Acceso exclusivo para el equipo de moderación de PataConecta.'
+  },
+  fundacion: {
+    titulo: 'Iniciar sesión como fundación',
+    subtitulo: 'Ingresan aquí tanto las fundaciones como sus colaboradores.'
+  }
+};
+
 if (formLogin) {
+  const perfilLogin = PataMenu.perfilElegido();
+  const textos = TEXTOS_LOGIN[perfilLogin];
+  document.getElementById('login-titulo').textContent = textos.titulo;
+  document.getElementById('login-subtitulo').textContent = textos.subtitulo;
+  document.getElementById('seccion-registro').hidden = perfilLogin !== 'usuario';
+  document.getElementById('seccion-fundacion').hidden = perfilLogin !== 'fundacion';
+
   formLogin.addEventListener('submit', function (e) {
     e.preventDefault();
     const correo = document.getElementById('login-correo').value;
     const password = document.getElementById('login-password').value;
     const mensaje = document.getElementById('login-mensaje');
+    const boton = formLogin.querySelector('button[type="submit"]');
+    boton.disabled = true;
 
     firebase.auth().signInWithEmailAndPassword(correo, password)
-      .then(function () {
-        mensaje.textContent = '¡Bienvenido/a! Sesión iniciada correctamente.';
-        mensaje.style.color = 'green';
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+      .then(function (cred) {
+        return PataMenu.obtenerRol(cred.user.uid).then(function (rol) {
+          if (!PataMenu.rolPermitido(perfilLogin, rol)) {
+            // La cuenta existe, pero no corresponde al perfil que eligió en el inicio
+            const tipo = rol ? PataMenu.NOMBRE_ROL[rol] : 'sin perfil asignado';
+            return firebase.auth().signOut().then(function () {
+              mensaje.textContent = 'Esta cuenta es de tipo "' + tipo + '". Vuelve al inicio y elige el perfil correcto.';
+              mensaje.style.color = 'red';
+              boton.disabled = false;
+            });
+          }
+          PataMenu.recordarRol(rol);
+          mensaje.textContent = '¡Bienvenido/a! Sesión iniciada correctamente.';
+          mensaje.style.color = 'green';
+          setTimeout(function () { window.location.href = PataMenu.INICIO_POR_ROL[rol]; }, 800);
+        });
       })
       .catch(function () {
         mensaje.textContent = 'Correo o contraseña incorrectos.';
         mensaje.style.color = 'red';
+        boton.disabled = false;
       });
   });
 }
@@ -305,7 +343,8 @@ if (formRegistro) {
       .then(function () {
         mensaje.textContent = '¡Cuenta creada con éxito!';
         mensaje.style.color = 'green';
-        setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+        PataMenu.recordarRol('usuario');
+        setTimeout(() => { window.location.href = PataMenu.INICIO_POR_ROL.usuario; }, 1500);
       })
       .catch(function (error) {
         // Si la cuenta de acceso ya se creó pero el perfil falló
@@ -365,7 +404,7 @@ const listaSolicitudesMod = document.getElementById('mod-lista-solicitudes');
 if (listaSolicitudesMod) {
   firebase.auth().onAuthStateChanged(function (user) {
     if (!user) {
-      mensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      mensajeAcceso.innerHTML = 'Debes <a href="login.html?perfil=moderador">iniciar sesión como moderador</a> para ver esta página.';
       return;
     }
     db.collection('usuarios').doc(user.uid).get().then(function (doc) {
@@ -422,19 +461,7 @@ function procesarSolicitud(usuarioModerador, solicitudId, accion) {
     });
   });
 }
-// ===== Menú dinámico según sesión (todas las páginas) =====
-firebase.auth().onAuthStateChanged(function (user) {
-  const navAuthLink = document.getElementById('nav-auth-link');
-  if (!navAuthLink) return;
-
-  if (user) {
-    navAuthLink.textContent = 'Mi cuenta';
-    navAuthLink.setAttribute('href', 'cuenta.html');
-  } else {
-    navAuthLink.textContent = 'Iniciar sesión';
-    navAuthLink.setAttribute('href', 'login.html');
-  }
-});
+// (El menú de cada página ahora lo dibuja js1/menu.js según el perfil o el rol)
 // ===== Mi Cuenta (cuenta.html) =====
 
 const cuentaNombreEl = document.getElementById('cuenta-nombre');
@@ -515,10 +542,7 @@ if (cuentaNombreEl) {
 }
 if (btnLogout) {
   btnLogout.addEventListener('click', function () {
-    firebase.auth().signOut().then(function () {
-      alert('Sesión cerrada.');
-      window.location.href = 'index.html';
-    });
+    PataMenu.cerrarSesion();
   });
 }
 // ===== Recuperar contraseña (recuperar-password.html) =====
@@ -568,7 +592,7 @@ const pfMensajeAcceso = document.getElementById('pf-mensaje-acceso');
 if (pfMensajeAcceso) {
   firebase.auth().onAuthStateChanged(function (user) {
     if (!user) {
-      pfMensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      pfMensajeAcceso.innerHTML = 'Debes <a href="login.html?perfil=fundacion">iniciar sesión como fundación</a> para ver esta página.';
       return;
     }
     db.collection('usuarios').doc(user.uid).get().then(function (doc) {
@@ -681,7 +705,7 @@ const peMensajeAcceso = document.getElementById('pe-mensaje-acceso');
 if (peMensajeAcceso) {
   firebase.auth().onAuthStateChanged(function (user) {
     if (!user) {
-      peMensajeAcceso.textContent = 'Debes iniciar sesión para ver esta página.';
+      peMensajeAcceso.innerHTML = 'Debes <a href="login.html?perfil=fundacion">iniciar sesión como colaborador</a> para ver esta página.';
       return;
     }
     db.collection('usuarios').doc(user.uid).get().then(function (doc) {
@@ -778,7 +802,7 @@ const maMensajeAcceso = document.getElementById('ma-mensaje-acceso');
 if (maMensajeAcceso) {
   firebase.auth().onAuthStateChanged(function (user) {
     if (!user) {
-      maMensajeAcceso.textContent = 'Debes iniciar sesión para ver tus aplicaciones.';
+      maMensajeAcceso.innerHTML = 'Debes <a href="login.html?perfil=usuario">iniciar sesión</a> para ver tus aplicaciones.';
       return;
     }
     maMensajeAcceso.textContent = '';
@@ -887,7 +911,7 @@ if (aaFormContainer) {
   } else {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) {
-        aaMensajeAcceso.textContent = 'Debes iniciar sesión para aplicar a una adopción.';
+        aaMensajeAcceso.innerHTML = 'Debes <a href="login.html?perfil=usuario">iniciar sesión</a> para aplicar a una adopción.';
         return;
       }
 

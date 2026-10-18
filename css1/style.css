@@ -35,6 +35,14 @@ header{
     align-items: center;
     padding: 16px 32px;
     flex-wrap: wrap;
+    gap: 12px;
+    min-height: 68px;
+}
+
+.marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .logo {
@@ -42,20 +50,135 @@ header{
     font-weight: bold;
 }
 
+/* Etiqueta con el perfil activo (Usuario, Moderador, Fundación, Colaborador) */
+.perfil-chip {
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 nav ul {
     list-style: none;
     display: flex;
-    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
 }
 
-nav a {
+nav a,
+.nav-accion {
     color: var(--blanco);
     font-weight: 500;
     transition: opacity 0.2s;
 }
 
-nav a:hover {
+nav a:hover,
+.nav-accion:hover {
     opacity: 0.75;
+}
+
+nav a[aria-current="page"] {
+    border-bottom: 2px solid var(--blanco);
+    padding-bottom: 2px;
+}
+
+.nav-accion {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    padding: 4px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.nav-secundario a {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.menu-toggle {
+    display: none;
+    background: none;
+    color: var(--blanco);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+a.enlace {
+    color: var(--azul);
+    text-decoration: underline;
+}
+
+.volver-selector {
+    text-align: center;
+    padding: 24px;
+}
+
+/* ===== Selector de perfil (index.html) ===== */
+.selector-perfil {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 48px 24px;
+}
+
+.opcion-perfil {
+    --color-perfil: var(--verde);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: var(--blanco);
+    border-radius: 16px;
+    border-top: 6px solid var(--color-perfil);
+    padding: 28px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.opcion-perfil:hover,
+.opcion-perfil:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.opcion-perfil:focus-visible {
+    outline: 3px solid var(--color-perfil);
+    outline-offset: 3px;
+}
+
+.opcion-perfil.perfil-usuario   { --color-perfil: var(--azul); }
+.opcion-perfil.perfil-moderador { --color-perfil: #8d3b1f; }
+.opcion-perfil.perfil-fundacion { --color-perfil: var(--verde); }
+
+.opcion-perfil .icono {
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+.opcion-perfil h2 {
+    color: var(--color-perfil);
+    font-size: 1.5rem;
+}
+
+.opcion-perfil ul {
+    padding-left: 18px;
+    font-size: 0.95rem;
+}
+
+.opcion-perfil .cta {
+    margin-top: auto;
+    padding-top: 12px;
+    font-weight: 700;
+    color: var(--color-perfil);
 }
 
 .hero {
@@ -262,14 +385,32 @@ footer{
 
 @media (max-width: 768px) {
   header {
+    padding: 12px 16px;
+  }
+
+  /* En celular el menú se abre con el botón ☰ */
+  .menu-toggle {
+    display: inline-block;
+  }
+
+  header nav {
+    display: none;
+    width: 100%;
+  }
+
+  header.abierto nav {
+    display: block;
+  }
+
+  header nav ul {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 8px 0 4px;
   }
 
-  nav ul {
-    flex-wrap: wrap;
-    gap: 12px 20px;
+  .selector-perfil {
+    padding: 32px 16px;
   }
 
   .hero h1 {
@@ -320,11 +461,6 @@ footer{
 @media (max-width: 480px) {
   .logo {
     font-size: 1.2rem;
-  }
-
-  nav ul {
-    flex-direction: column;
-    gap: 8px;
   }
 
   .opciones-radio {
